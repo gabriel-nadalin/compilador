@@ -2,8 +2,7 @@ mod file_reader;
 pub mod token;
 
 use file_reader::FileReader;
-use token::Token;
-use token::TipoToken;
+use token::{Token, TipoToken};
 
 pub struct Lexico {
     reader: FileReader,
@@ -11,6 +10,8 @@ pub struct Lexico {
 }
 
 impl Lexico {
+
+    /// retorna instancia de analisador lexico
     pub fn new(file: &str) -> Self {
         Lexico {
             reader: FileReader::new(file),
@@ -18,19 +19,22 @@ impl Lexico {
         }
     }
 
+    /// retorna linha atual
     pub fn line(&mut self) -> u32 {
         self.line
     }
 
+    /// debug: exibe conteúdo do buffer
     pub fn print_buffer(&mut self) {
         self.reader.print_buffer();
     }
 
-    pub fn next_token(&mut self) -> Option<Token> {
+    /// retorna proximo token ou token de erro no caso de erro lexico
+    pub fn next_token(&mut self) -> Token {
         let mut next = self.whitespace_and_comments();
         self.reader.confirm();
         if next.is_some() {
-            return next;
+            return next.unwrap();
         }
         
         next = self.end();
@@ -38,7 +42,7 @@ impl Lexico {
             self.reader.reset();
         } else {
             self.reader.confirm();
-            return next;
+            return next.unwrap();
         }
 
         next = self.keywords();
@@ -46,7 +50,7 @@ impl Lexico {
             self.reader.reset();
         } else {
             self.reader.confirm();
-            return next;
+            return next.unwrap();
         }
 
         next = self.identifier();
@@ -54,7 +58,7 @@ impl Lexico {
             self.reader.reset();
         } else {
             self.reader.confirm();
-            return next;
+            return next.unwrap();
         }
 
         next = self.number();
@@ -62,7 +66,7 @@ impl Lexico {
             self.reader.reset();
         } else {
             self.reader.confirm();
-            return next;
+            return next.unwrap();
         }
 
         next = self.op_arit();
@@ -70,7 +74,7 @@ impl Lexico {
             self.reader.reset();
         } else {
             self.reader.confirm();
-            return next;
+            return next.unwrap();
         }
 
         next = self.op_rel();
@@ -78,7 +82,7 @@ impl Lexico {
             self.reader.reset();
         } else {
             self.reader.confirm();
-            return next;
+            return next.unwrap();
         }
 
         next = self.special_char();
@@ -86,7 +90,7 @@ impl Lexico {
             self.reader.reset();
         } else {
             self.reader.confirm();
-            return next;
+            return next.unwrap();
         }
 
         next = self.str_literal();
@@ -94,11 +98,11 @@ impl Lexico {
             self.reader.reset();
         } else {
             self.reader.confirm();
-            return next;
+            return next.unwrap();
         }
         
         let message = "Linha ".to_string() + &self.line.to_string() + ": " + &self.reader.next_char().to_string() + " - simbolo nao identificado\n";
-        return Some(Token::new(TipoToken::Erro, message))
+        return Token::new(TipoToken::Erro, message)
     }
 
     fn op_arit(&mut self) -> Option<Token> {

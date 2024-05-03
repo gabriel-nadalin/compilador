@@ -7,7 +7,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let mut lex = Lexico::new(&args[1]);
     let mut file_out = File::create(&args[2]).unwrap();
-    let mut next = lex.next_token().unwrap();
+    let mut next = lex.next_token();
 
     while next.tipo() != token::TipoToken::Fim {
         if next.tipo() == token::TipoToken::Erro {
@@ -15,6 +15,6 @@ fn main() {
             break;
         }
         file_out.write_all((next.to_string() + "\n").as_bytes()).unwrap();
-        next = lex.next_token().unwrap();
+        next = lex.next_token();
     }
 }

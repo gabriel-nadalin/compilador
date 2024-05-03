@@ -13,6 +13,8 @@ pub struct FileReader {
 }
 
 impl FileReader {
+
+    /// incrementa o ponteiro do buffer, recarregando a proxima metade, se necessario
     fn increment(&mut self) {
         self.pointer += 1;
         if self.pointer == BUFFER_SIZE {
@@ -23,6 +25,7 @@ impl FileReader {
         }
     }
 
+    /// recarrega uma das metades do buffer
     fn load_buffer(&mut self, buffer_half: usize) {
         if self.current_buffer != buffer_half {
             self.current_buffer = buffer_half;
@@ -33,12 +36,14 @@ impl FileReader {
         }
     }
 
+    /// retorna proximo caracter do buffer
     fn next_buffer_char(&mut self) -> char {
         let c = self.buffer[self.pointer];
         self.increment();
         c as char
     }
     
+    /// retorna instancia de leitor de arquivos
     pub fn new(file: &str) -> FileReader {
         let file = File::open(file).unwrap();
 
@@ -56,12 +61,14 @@ impl FileReader {
         reader
     }
 
+    /// retorna proximo caracter do buffer apos adiciona-lo ao lexema atual
     pub fn next_char(&mut self) -> char {
         let c = self.next_buffer_char();
         self.lexeme += &c.to_string();
         c
     }
 
+    /// decrementa o ponteiro do buffer
     pub fn decrement(&mut self) {
         if self.pointer > 0 {
             self.pointer -= 1;
@@ -71,20 +78,24 @@ impl FileReader {
         self.lexeme.pop();
     }
 
+    /// reinicia lexema
     pub fn reset(&mut self) {
         self.pointer = self.lexeme_start;
         self.lexeme = "".to_string();
     }
 
+    /// confirma lexema
     pub fn confirm(&mut self) {
         self.lexeme_start = self.pointer;
         self.lexeme = "".to_string();
     }
 
+    /// retorna lexema
     pub fn get_lexeme(&mut self) -> String {
         self.lexeme.to_string()
     }
 
+    /// debug: exibe conteúdo do buffer
     pub fn print_buffer(&mut self) {
         let mut out = "Buffer:[".to_string();
         for i in 0..BUFFER_SIZE * 2 {

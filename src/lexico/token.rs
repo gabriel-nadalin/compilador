@@ -25,10 +25,12 @@ impl Token {
         }
     }
 
+    /// get tipo
     pub fn tipo(&self) -> TipoToken {
         self.tipo
     }
 
+    /// get lexema
     pub fn lexema(&self) -> String {
         self.lexema.to_string()
     }
@@ -51,6 +53,7 @@ impl Token {
         "<'".to_owned() + lexema + "'," + &tipo + ">"
     }
 
+    /// retorna uma copia do token
     pub fn copy(&mut self) -> Token {
         return Self::new(self.tipo(), self.lexema())
     }
