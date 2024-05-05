@@ -10,7 +10,7 @@ Analisador léxico para a linguagem LA. Lê um arquivo fonte, identificando toke
 
 ## T2
 Analisador sintático para a linguagem LA. Utiliza os tokens de saída do analisador léxico para a análise sintática de um arquivo fonte,
-segundo a [gramática da linguagem](gramatica.txt), também interrompendo sua execução em caso de erro.
+segundo a [gramática da linguagem](gramatica.txt), também interrompendo sua execução em caso de erro léxico ou sintático.
 
 ## Como executar
 1. Compilando: é necessário ter instalado o gerenciador de pacotes da linguagem Rust, o [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html).\
