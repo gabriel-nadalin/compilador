@@ -1,0 +1,81 @@
+// programa : declaracoes 'algoritmo' corpo 'fim_algoritmo'
+// declaracoes : decl_local_global declaracoes | <<vazio>>
+// decl_local_global : declaracao_local | declaracao_global
+// declaracao_local : 'declare' variavel
+//     | 'constante' IDENT ':' tipo_basico '=' valor_constante
+//     | 'tipo' IDENT ':' tipo
+// variavel : identificador identificadores ':' tipo
+// identificador : IDENT identificador2 dimensao
+// identificador2 : '.' IDENT identificador2 | <<vazio>>
+// identificadores: ',' identificador identificadores | <<vazio>>
+// dimensao : '[' exp_aritmetica ']' dimensao | <<vazio>>
+// tipo : registro | tipo_estendido
+// tipo_basico : 'literal' | 'inteiro' | 'real' | 'logico'
+// tipo_basico_ident : tipo_basico | IDENT
+// tipo_estendido : circunflexo tipo_basico_ident
+// circunflexo: '^' | <<vazio>>
+// valor_constante : CADEIA | NUM_INT | NUM_REAL | 'verdadeiro' | 'falso'
+// registro : 'registro' variaveis 'fim_Registro'
+// variaveis : variavel variaveis | <<vazio>>
+// declaracao_global : 'procedimento' IDENT '(' parametros ')'
+//         declaracoes_locais cmds 'fim_procedimento'
+//     | 'funcao' IDENT '(' parametros ')' ':' tipo_estendido
+//         declaracoes_locais cmds 'fim_funcao'
+// declaracoes_locais : declaracao_local declaracoes_locais | <<vazio>>
+// parametro : var identificador identificadores ':' tipo_estendido
+// parametros : parametro parametros2 | <<vazio>>
+// parametros2 : ',' parametro
+// var : 'var' | <<vazio>>
+// corpo : declaracoes_locais cmds
+// cmd : cmdLeia | cmdEscreva | cmdSe | cmdCaso | cmdPara| cmdEnquanto
+//     | cmdFaca | cmdAtribuicao | cmdChamada | cmdRetorne
+// cmds : cmd cmds | <<vazio>>
+// cmdLeia : 'leia' '(' circunflexo identificador cmdLeia2 ')'
+// cmdLeia2 : ',' circunflexo identificador cmdLeia2 | <<vazio>>
+// cmdEscreva : 'escreva' '(' expressao expressoes ')'
+// cmdSe : 'se' expressao 'entao' cmds senao 'fim_se'
+// senao : 'senao' cmds | <<vazio>>
+// cmdCaso : 'caso' exp_aritmetica 'seja' selecao senao 'fim_caso'
+// cmdPara : 'para' IDENT '<-' exp_aritmetica 'ate' exp_aritmetica 'faca' cmds 'fim_para'
+// cmdEnquanto : 'enquanto' expressao 'faca' cmds 'fim_enquanto'
+// cmdFaca : 'faca' cmds 'ate' expressao
+// cmdAtribuicao : circunflexo identificador '<-' expressao
+// cmdChamada : IDENT '(' expressao expressoes ')'
+// cmdRetorne : 'retorne' expressao
+// selecao : item_selecao selecao | <<vazio>>
+// item_selecao : constantes ':' cmds
+// constantes : numero_intervalo numero_intervalos
+// numero_intervalo : op_unario NUM_INT numero_intervalo2
+// numero_intervalos : ',' numero_intervalo numero_intervalos | <<vazio>>
+// numero_intervalo2 : '..' op_unario NUM_INT | <<vazio>>
+// op_unario : '-' | <<vazio>>
+// exp_aritmetica : termo termos
+// termo : fator fatores
+// termos : op1 termo termos | <<vazio>>
+// fator : parcela parcelas
+// fatores : op2 fator fatores | <<vazio>>
+// op1 : '+' | '-'
+// op2 : '*' | '/'
+// op3 : '%'
+// parcela : op_unario parcela_unario | parcela_nao_unario
+// parcelas : op3 parcela parcelas | <<vazio>>
+// parcela_unario : circunflexo identificador
+//     | IDENT '(' expressao expressoes ')'
+//     | NUM_INT
+//     | NUM_REAL
+//     | '(' expressao ')'
+// parcela_nao_unario : '&' identificador | CADEIA
+// exp_relacional : exp_aritmetica exp_relacional2
+// exp_relacional2 : op_relacional exp_aritmetica | <<vazio>>
+// op_relacional : '=' | '<>' | '>=' | '<=' | '>' | '<'
+// expressao : termo_logico termos_logicos
+// expressoes : ',' expressao expressoes | <<vazio>>
+// termo_logico : fator_logico fatores_logicos
+// termos_logicos : op_logico_1 termo_logico termos_logicos | <<vazio>>
+// fator_logico : nao parcela_logica
+// fatores_logicos : op_logico_2 fator_logico fatores_logicos | <<vazio>>
+// nao : 'nao' | <<vazio>>
+// parcela_logica : parcela_logica2 | exp_relacional
+// parcela_logica2 : 'verdadeiro' | 'falso'
+// op_logico_1 : 'ou'
+// op_logico_2 : 'e'

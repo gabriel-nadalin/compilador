@@ -68,7 +68,7 @@ impl FileReader {
         c
     }
 
-    /// decrementa o ponteiro do buffer
+    /// decrementa o ponteiro do buffer e remove o ultimo caracter do lexema atual
     pub fn decrement(&mut self) {
         if self.pointer > 0 {
             self.pointer -= 1;

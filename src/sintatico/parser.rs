@@ -6,7 +6,7 @@ use std::io::Write;
 const BUFFER_SIZE: usize = 10;
 
 pub struct Parser {
-    buffer_tokens: Vec<(Token, u32)>,       /// vetor de tuplas (token, linha)
+    buffer_tokens: Vec<(Token, u32)>,       // vetor de tuplas (token, linha)
     lex: Lexico,
     end: bool,
     file_out: File,
@@ -77,6 +77,8 @@ impl Parser {
         self.file_out.write_all(mensagem.as_bytes()).unwrap();
         panic!()
     }
+
+    // as funcoes a seguir representam as leis de formacao da gramatica da linguagem LA
 
     /// programa : declaracoes 'algoritmo' corpo 'fim_algoritmo'
     pub fn programa(&mut self) {
