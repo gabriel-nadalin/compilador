@@ -24,10 +24,10 @@
 // declaracoes_locais : declaracao_local declaracoes_locais | <<vazio>>
 // parametro : var identificador identificadores ':' tipo_estendido
 // parametros : parametro parametros2 | <<vazio>>
-// parametros2 : ',' parametro
+// parametros2 : ',' parametro parametros2 | <<vazio>>
 // var : 'var' | <<vazio>>
 // corpo : declaracoes_locais cmds
-// cmd : cmdLeia | cmdEscreva | cmdSe | cmdCaso | cmdPara| cmdEnquanto
+// cmd : cmdLeia | cmdEscreva | cmdSe | cmdCaso | cmdPara | cmdEnquanto
 //     | cmdFaca | cmdAtribuicao | cmdChamada | cmdRetorne
 // cmds : cmd cmds | <<vazio>>
 // cmdLeia : 'leia' '(' circunflexo identificador cmdLeia2 ')'
@@ -75,7 +75,7 @@
 // fator_logico : nao parcela_logica
 // fatores_logicos : op_logico_2 fator_logico fatores_logicos | <<vazio>>
 // nao : 'nao' | <<vazio>>
-// parcela_logica : parcela_logica2 | exp_relacional
-// parcela_logica2 : 'verdadeiro' | 'falso'
+// parcela_logica : constante_logica | exp_relacional
+// constante_logica : 'verdadeiro' | 'falso'
 // op_logico_1 : 'ou'
 // op_logico_2 : 'e'

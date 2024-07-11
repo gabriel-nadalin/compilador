@@ -6,7 +6,7 @@ use std::io::Write;
 const BUFFER_SIZE: usize = 10;
 
 pub struct Parser {
-    buffer_tokens: Vec<(Token, u32)>,       // vetor de tuplas (token, linha)
+    buffer_tokens: Vec<Token>,
     lex: Lexico,
     end: bool,
     file_out: File,
@@ -34,8 +34,8 @@ impl Parser {
             self.buffer_tokens.remove(0);
         }
         while self.buffer_tokens.len() < BUFFER_SIZE && !self.end {
-            let next = (self.lex.next_token(), self.lex.line());
-            if next.0.tipo() == TipoToken::Fim {
+            let next = self.lex.next_token();
+            if next.tipo() == TipoToken::Fim {
                 self.end = true;
             }
             self.buffer_tokens.push(next);
@@ -57,19 +57,19 @@ impl Parser {
     fn lookahead(&mut self, k: usize) -> Token {
         let len = self.buffer_tokens.len();
         if len == 0 {
-            return Token::new(TipoToken::Vazio, "".to_string());
+            return Token::new(TipoToken::Vazio, "".to_string(), self.lex.line());
         }
         if k - 1 >= len {
-            return self.buffer_tokens[len - 1].0.copy()
+            return self.buffer_tokens[len - 1].copy()
         }
-        self.buffer_tokens[k - 1].0.copy()
+        self.buffer_tokens[k - 1].copy()
     }
 
     /// interrompe execucao e imprime mensagem de erro constando linha e lexema atuais
     fn erro_sintatico(&mut self) {
-        let linha = self.buffer_tokens[0].1;
-        let lexema = self.buffer_tokens[0].0.lexema();
-        let mensagem = if self.buffer_tokens[0].0.tipo() == TipoToken::Erro {
+        let linha = self.buffer_tokens[0].linha();
+        let lexema = self.buffer_tokens[0].lexema();
+        let mensagem = if self.buffer_tokens[0].tipo() == TipoToken::Erro {
             lexema + "Fim da compilacao\n"
         } else {
             "Linha ".to_string() + &linha.to_string() + ": erro sintatico proximo a " + &lexema + "\nFim da compilacao\n"
@@ -80,6 +80,7 @@ impl Parser {
 
     // as funcoes a seguir representam as leis de formacao da gramatica da linguagem LA
 
+    /// inicia a analise sintatica\
     /// programa : declaracoes 'algoritmo' corpo 'fim_algoritmo'
     pub fn programa(&mut self) {
         self.declaracoes();
@@ -822,10 +823,10 @@ impl Parser {
         }
     }
     
-    /// parcela_logica : parcela_logica2 | exp_relacional
+    /// parcela_logica : constante_logica | exp_relacional
     fn parcela_logica(&mut self) {
         match self.lookahead(1).tipo() {
-            TipoToken::PCverdadeiro | TipoToken::PCfalso => self.parcela_logica2(),
+            TipoToken::PCverdadeiro | TipoToken::PCfalso => self.constante_logica(),
             TipoToken::OpAritSub
             | TipoToken::Circunflexo
             | TipoToken::Ident
@@ -838,8 +839,8 @@ impl Parser {
         }
     }
     
-    /// parcela_logica2 : 'verdadeiro' | 'falso'
-    fn parcela_logica2(&mut self) {
+    /// constante_logica : 'verdadeiro' | 'falso'
+    fn constante_logica(&mut self) {
         match self.lookahead(1).tipo() {
             TipoToken::PCverdadeiro => self.match_(TipoToken::PCverdadeiro),
             TipoToken::PCfalso => self.match_(TipoToken::PCfalso),

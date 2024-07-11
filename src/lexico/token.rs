@@ -13,15 +13,18 @@ pub enum TipoToken {
 #[derive(Debug)]
 pub struct Token {
     tipo: TipoToken,
-    lexema: String
+    lexema: String,
+    linha: u32,
 }
 
 impl Token {
+    
     /// retorna instancia de token
-    pub fn new(tipo: TipoToken, lexema: String) -> Self {
+    pub fn new(tipo: TipoToken, lexema: String, linha: u32) -> Self {
         Token {
             tipo,
-            lexema
+            lexema,
+            linha,
         }
     }
 
@@ -35,6 +38,11 @@ impl Token {
         self.lexema.to_string()
     }
 
+    /// get linha
+    pub fn linha(&self) -> u32 {
+        self.linha
+    }
+
     /// retorna string representando o tipo do token
     pub fn tipo_string(&self) -> String {
         match self.tipo {
@@ -42,7 +50,7 @@ impl Token {
             TipoToken::NumInt => "NUM_INT".to_string(),
             TipoToken::NumReal => "NUM_REAL".to_string(),
             TipoToken::Cadeia => "CADEIA".to_string(),
-            _ => "\'".to_string() + &self.lexema + "\'"
+            _ => "'".to_string() + &self.lexema + "'"
         }
     }
 
@@ -55,6 +63,6 @@ impl Token {
 
     /// retorna uma copia do token
     pub fn copy(&mut self) -> Token {
-        return Self::new(self.tipo(), self.lexema())
+        Self::new(self.tipo(), self.lexema(), self.linha)
     }
 }
