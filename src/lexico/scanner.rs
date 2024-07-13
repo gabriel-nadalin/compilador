@@ -3,7 +3,8 @@ use std::io::{BufReader, Read};
 
 const BUFFER_SIZE: usize = 500;
 
-pub struct FileReader {
+/// escaneia arquivo e converte todos os lexemas em tokens
+pub struct Scanner {
     stream: BufReader<File>,
     buffer: [u8; 2 * BUFFER_SIZE],
     pointer: usize,
@@ -12,7 +13,7 @@ pub struct FileReader {
     lexeme: String,
 }
 
-impl FileReader {
+impl Scanner {
 
     /// incrementa o ponteiro do buffer, recarregando a proxima metade, se necessario
     fn increment(&mut self) {
@@ -43,11 +44,11 @@ impl FileReader {
         c as char
     }
     
-    /// retorna instancia de leitor de arquivos
-    pub fn new(file: &str) -> FileReader {
+    /// retorna instancia de scanner
+    pub fn new(file: &str) -> Self {
         let file = File::open(file).unwrap();
 
-        let mut reader = FileReader {
+        let mut reader = Self {
             stream: BufReader::new(file),
             buffer: [0; 2 * BUFFER_SIZE],
             current_buffer: 1,

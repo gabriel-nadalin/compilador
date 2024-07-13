@@ -1,6 +1,6 @@
 // programa : declaracoes 'algoritmo' corpo 'fim_algoritmo'
-// declaracoes : decl_local_global declaracoes | <<vazio>>
-// decl_local_global : declaracao_local | declaracao_global
+// declaracoes : declaracao declaracoes | <<vazio>>
+// declaracao : declaracao_local | declaracao_global
 // declaracao_local : 'declare' variavel
 //     | 'constante' IDENT ':' tipo_basico '=' valor_constante
 //     | 'tipo' IDENT ':' tipo
@@ -61,9 +61,9 @@
 // parcelas : op3 parcela parcelas | <<vazio>>
 // parcela_unario : circunflexo identificador
 //     | IDENT '(' expressao expressoes ')'
+//     | '(' expressao ')'
 //     | NUM_INT
 //     | NUM_REAL
-//     | '(' expressao ')'
 // parcela_nao_unario : '&' identificador | CADEIA
 // exp_relacional : exp_aritmetica exp_relacional2
 // exp_relacional2 : op_relacional exp_aritmetica | <<vazio>>

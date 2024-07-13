@@ -1,37 +1,5 @@
 use crate::lexico::token::Token;
 
-pub struct ArvoreSintatica {
-    declaracoes: Vec<Declaracao>,
-    corpo: Corpo,
-}
-
-pub enum Declaracao {
-    Local(DeclaracaoLocal),
-    Global(DeclaracaoGlobal),
-}
-
-pub enum DeclaracaoLocal {
-    Variavel {variavel: Box<NoAST>},
-    Constante {
-        identificador: Token,
-        tipo_basico: Token,
-        valor: Token,
-    },
-    Tipo {
-        indentificador: Token,
-        tipo: Box<NoAST>,
-    },
-}
-
-pub enum DeclaracaoGlobal {
-    Procedimento,
-    Funcao,
-}
-
-pub enum Corpo {
-
-}
-
 pub enum NoAST {
     // programa : declaracoes 'algoritmo' corpo 'fim_algoritmo'
     Programa {
@@ -48,22 +16,23 @@ pub enum NoAST {
     
     // declaracao_local :
     //     'declare' variavel
-    DeclaracaoVariavel {variavel: Box<NoAST>},
+    DeclaracaoVariavel { variavel: Box<NoAST>},
     
     //     | 'tipo' IDENT ':' tipo
     DeclaracaoTipo {
-        ident: Token,
+        ident: Box<NoAST>,
         tipo: Box<NoAST>,
     },
     
     //     | 'constante' IDENT ':' tipo_basico '=' valor_constante
     DeclaracaoConstante {
-        ident: Token,
-        tipo_basico: Token,
-        valor: Token,
+        ident: Box<NoAST>,
+        tipo_basico: Box<NoAST>,
+        valor_constante: Box<NoAST>,
     },
-    // tipo_basico : 'literal' | 'inteiro' | 'real' | 'logico'
+    
     // valor_constante : CADEIA | NUM_INT | NUM_REAL | 'verdadeiro' | 'falso'
+    ValorConstante (Token),
     
     // variavel : identificador identificadores ':' tipo
     Variavel {
@@ -75,14 +44,14 @@ pub enum NoAST {
     
     // identificador : IDENT identificador2 dimensao
     Identificador {
-        ident: Token,
+        ident: Box<NoAST>,
         identificador2: Box<NoAST>,
         dimensao: Box<NoAST>,
     },
 
     // identificador2 : '.' IDENT identificador2 | <<vazio>>
     Identificador2 {
-        ident: Token,
+        ident: Box<NoAST>,
         identificador2: Box<NoAST>,
     },
 
@@ -98,13 +67,17 @@ pub enum NoAST {
         dimensao: Box<NoAST>,
     },
 
-    
     // tipo_estendido : circunflexo tipo_basico_ident
     TipoExtendido {
         circunflexo: Box<NoAST>,
-        tipo_basico_ident: Token,
+        tipo_basico_ident: Box<NoAST>,
     },
-    // tipo_basico_ident : tipo_basico | IDENT
+    // tipo_basico_ident : tipo_basico
+    //    | IDENT
+    Ident (Token),
+
+    // tipo_basico : 'literal' | 'inteiro' | 'real' | 'logico'
+    TipoBasico (Token),
     
     // circunflexo: '^' | <<vazio>>
     Circunflexo,
@@ -123,7 +96,7 @@ pub enum NoAST {
     // declaracao_global :
     //     'procedimento' IDENT '(' parametros ')' declaracoes_locais cmds 'fim_procedimento'
     DeclaracaoProcedimento {
-        ident: Token,
+        ident: Box<NoAST>,
         parametros: Box<NoAST>,
         declaracoes_locais: Box<NoAST>,
         cmds: Box<NoAST>,
@@ -131,7 +104,7 @@ pub enum NoAST {
 
     //     | 'funcao' IDENT '(' parametros ')' ':' tipo_estendido declaracoes_locais cmds 'fim_funcao'
     DeclaracaoFuncao {
-        ident: Token,
+        ident: Box<NoAST>,
         parametros: Box<NoAST>,
         tipo_estendido: Box<NoAST>,
         declaracoes_locais: Box<NoAST>,
@@ -149,7 +122,7 @@ pub enum NoAST {
         var: Box<NoAST>,
         identificador: Box<NoAST>,
         identificadores: Box<NoAST>,
-        tipo_entendido: Box<NoAST>,
+        tipo_estendido: Box<NoAST>,
     },
 
     // parametros : parametro parametros2 | <<vazio>>
@@ -183,7 +156,7 @@ pub enum NoAST {
 
     // cmdLeia : 'leia' '(' circunflexo identificador cmdLeia2 ')'
     CMDLeia {
-        circuflexo: Box<NoAST>,
+        circunflexo: Box<NoAST>,
         identificador: Box<NoAST>,
         cmd_leia2: Box<NoAST>,
     },
@@ -209,7 +182,7 @@ pub enum NoAST {
     },
 
     // senao : 'senao' cmds | <<vazio>>
-    Senao {cmds: Box<NoAST>},
+    Senao { cmds: Box<NoAST> },
 
     // cmdCaso : 'caso' exp_aritmetica 'seja' selecao senao 'fim_caso'
     CMDCaso {
@@ -220,7 +193,7 @@ pub enum NoAST {
 
     // cmdPara : 'para' IDENT '<-' exp_aritmetica 'ate' exp_aritmetica 'faca' cmds 'fim_para'
     CMDPara {
-        ident: Token,
+        ident: Box<NoAST>,
         exp_aritmetica_1: Box<NoAST>,
         exp_aritmetica_2: Box<NoAST>,
         cmds: Box<NoAST>,
@@ -247,13 +220,13 @@ pub enum NoAST {
 
     // cmdChamada : IDENT '(' expressao expressoes ')'
     CMDChamada {
-        ident: Token,
+        ident: Box<NoAST>,
         expressao: Box<NoAST>,
         expressoes: Box<NoAST>,
     },
 
     // cmdRetorne : 'retorne' expressao
-    CMDRetorne {expressao: Box<NoAST>},
+    CMDRetorne { expressao: Box<NoAST> },
 
     // selecao : item_selecao selecao | <<vazio>>
     Selecao {
@@ -276,7 +249,7 @@ pub enum NoAST {
     // numero_intervalo : op_unario NUM_INT numero_intervalo2
     NumeroIntervalo {
         op_unario: Box<NoAST>,
-        int: Token,
+        num_int: Box<NoAST>,
         numero_intervalo2: Box<NoAST>,
     },
     
@@ -289,7 +262,7 @@ pub enum NoAST {
     // numero_intervalo2 : '..' op_unario NUM_INT | <<vazio>>
     NumeroIntervalo2 {
         op_unario: Box<NoAST>,
-        int: Token,
+        num_int: Box<NoAST>,
     },
 
     // op_unario : '-' | <<vazio>>
@@ -309,11 +282,13 @@ pub enum NoAST {
 
     // termos : op1 termo termos | <<vazio>>
     Termos {
-        op1: Token,
+        op1: Box<NoAST>,
         termo: Box<NoAST>,
         termos: Box<NoAST>,
     },
+
     // op1 : '+' | '-'
+    Op1 (Token),
 
     // fator : parcela parcelas
     Fator {
@@ -323,56 +298,57 @@ pub enum NoAST {
 
     // fatores : op2 fator fatores | <<vazio>>
     Fatores {
-        op2: Token,
+        op2: Box<NoAST>,
         fator: Box<NoAST>,
         fatores: Box<NoAST>,
     },
-    // op2 : '*' | '/'
     
-    // parcela : op_unario parcela_unario
-    Parcela1 {
+    // op2 : '*' | '/'
+    Op2 (Token),
+    
+    // parcela : op_unario parcela_unario | parcela_nao_unario
+    Parcela {
         op_unario: Box<NoAST>,
         parcela_unario: Box<NoAST>,
     },
     
-    //     | parcela_nao_unario
-    Parcela2 {parcela_nao_unario: Box<NoAST>},
-    
     // parcelas : op3 parcela parcelas | <<vazio>>
     Parcelas {
-        op3: Token,
+        op3: Box<NoAST>,
         parcela: Box<NoAST>,
         parcelas: Box<NoAST>,
     },
+
     // op3 : '%'
+    Op3,
     
     // parcela_unario : circunflexo identificador
     ParcelaUnario1 {
         circunflexo: Box<NoAST>,
-        identificadro: Box<NoAST>,
+        identificador: Box<NoAST>,
     },
 
     //     | IDENT '(' expressao expressoes ')'
     ParcelaUnario2 {
-        ident: Token,
+        ident: Box<NoAST>,
         expressao: Box<NoAST>,
         expressoes: Box<NoAST>,
     },
 
+    //     | '(' expressao ')'
+    ParcelaUnario3 { expressao: Box<NoAST> },
+
     //     | NUM_INT
-    ParcelaUnario3 {int: Token},
+    NumInt (Token),
 
     //     | NUM_REAL
-    ParcelaUnario4 {real: Token},
-
-    //     | '(' expressao ')'
-    ParcelaUnario5 {expressao: Box<NoAST>},
+    NumReal (Token),
 
     // parcela_nao_unario : '&' identificador
-    ParcelaNaoUnario1 {identificador: Box<NoAST>},
+    ParcelaNaoUnario { identificador: Box<NoAST> },
 
     //     | CADEIA
-    ParcelaNaoUnario2 {cadeia: Token},
+    Cadeia (Token),
 
     // exp_relacional : exp_aritmetica exp_relacional2
     ExpRelacional {
@@ -382,10 +358,12 @@ pub enum NoAST {
 
     // exp_relacional2 : op_relacional exp_aritmetica | <<vazio>>
     ExpRelacional2 {
-        op_relacional: Token,
+        op_relacional: Box<NoAST>,
         exp_aritmetica: Box<NoAST>,
     },
+
     // op_relacional : '=' | '<>' | '>=' | '<=' | '>' | '<'
+    OpRelacional (Token),
     
     // expressao : termo_logico termos_logicos
     Expressao {
@@ -417,6 +395,8 @@ pub enum NoAST {
         nao: Box<NoAST>,
         parcela_logica: Box<NoAST>,
     },
+    // parcela_logica : constante_logica
+    //     | exp_relacional
     
     // fatores_logicos : op_logico_2 fator_logico fatores_logicos | <<vazio>>
     FatoresLogicos {
@@ -427,13 +407,9 @@ pub enum NoAST {
     
     // nao : 'nao' | <<vazio>>
     Nao,
-
+    
     // constante_logica : 'verdadeiro' | 'falso'
-    // parcela_logica : constante_logica
-    ParcelaLogica1 {constante_logica: Token},
-
-    //     | exp_relacional
-    ParcelaLogica2 {exp_relacional:Box<NoAST>},
+    ConstanteLogica(Token),
     
     // op_logico_1 : 'ou'
     OpLogico1,
@@ -442,5 +418,5 @@ pub enum NoAST {
     OpLogico2,
 
     Vazio,
-    Erro,
+    Erro { mensagem: String },
 }
