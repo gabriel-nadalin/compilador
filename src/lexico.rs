@@ -101,7 +101,7 @@ impl Lexico {
             return next.unwrap();
         }
         
-        let message = "Linha ".to_string() + &self.line.to_string() + ": " + &self.scanner.next_char().to_string() + " - simbolo nao identificado\n";
+        let message = format!("Linha {}: {} - simbolo nao identificado\n", self.line, self.scanner.next_char());
         return Token::new(TipoToken::Erro, message, self.line)
     }
 
@@ -216,7 +216,7 @@ impl Lexico {
                 }
             } else if state == 2 {
                 if c == '\n' {
-                    let message = "Linha ".to_string() + &self.line.to_string() + ": cadeia literal nao fechada\n";
+                    let message = format!("Linha {}: cadeia literal nao fechada\n", self.line);
                     return Some(Token::new(TipoToken::Erro, message, self.line))
                 }
                 if c == '\"' {
@@ -226,7 +226,7 @@ impl Lexico {
                 }
             } else if state == 3 {
                 if c == '\n' {
-                    let message = "Linha ".to_string() + &self.line.to_string() + ": cadeia literal nao fechada\n";
+                    let message = format!("Linha {}: cadeia literal nao fechada\n", self.line);
                     return Some(Token::new(TipoToken::Erro, message, self.line))
                 } else {
                     state = 2;
@@ -258,7 +258,7 @@ impl Lexico {
             } else if state == 3 {
 
                 if c == '\n' {
-                    let message = "Linha ".to_string() + &self.line.to_string() + ": comentario nao fechado\n";
+                    let message = format!("Linha {}: comentario nao fechado\n", self.line);
                     return Some(Token::new(TipoToken::Erro, message, self.line))
                 } else if c == '}' {
                     state = 1

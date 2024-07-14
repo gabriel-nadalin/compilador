@@ -6,28 +6,22 @@ use crate::{
     sintatico::arvore_sintatica::NoAST
 };
 
-use std::fs::File;
-use std::io::Write;
-
 const BUFFER_SIZE: usize = 10;
 
 pub struct Parser {
     buffer_tokens: Vec<Token>,
     lex: Lexico,
     end: bool,
-    file_out: File,
 }
 
 impl Parser {
 
     /// retorna instancia de parser
-    pub fn new(lex: Lexico, file_out: &str) -> Self {
+    pub fn new(lex: Lexico) -> Self {
         let buffer_tokens = vec![];
-        let file_out = File::create(file_out).unwrap();
         let mut parser = Self {
             buffer_tokens,
             lex,
-            file_out,
             end: false,
         };
         parser.read_token();
@@ -87,12 +81,9 @@ impl Parser {
         let mensagem = if self.buffer_tokens[0].tipo() == TipoToken::Erro {
             lexema + "Fim da compilacao\n"
         } else {
-            "Linha ".to_string() + &linha.to_string() + ": erro sintatico proximo a " + &lexema + "\nFim da compilacao\n"
+            format!("Linha {}: erro sintatico proximo a {}\nFim da compilacao\n", linha, lexema)
         };
-
-        // self.file_out.write_all(mensagem.as_bytes()).unwrap();
-        // panic!()
-
+        
         NoAST::Erro { mensagem }
     }
 
@@ -102,19 +93,30 @@ impl Parser {
     /// programa : declaracoes 'algoritmo' corpo 'fim_algoritmo'
     pub fn programa(&mut self) -> NoAST {
         let declaracoes = Box::new(self.declaracoes());
+        if let NoAST::Erro { mensagem: _ } = *declaracoes {
+            return *declaracoes
+        }
+
         match self.match_(TipoToken::PCalgoritmo) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let corpo = Box::new(self.corpo());
+        if let NoAST::Erro { mensagem: _ } = *corpo {
+            return *corpo
+        }
+
         match self.match_(TipoToken::PCfimAlgoritmo) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         match self.match_(TipoToken::Fim) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         NoAST::Programa { declaracoes, corpo }
     }
 
@@ -127,7 +129,15 @@ impl Parser {
             | TipoToken::PCprocedimento
             | TipoToken::PCfuncao  =>  {
                 let declaracao = Box::new(self.declaracao());
+                if let NoAST::Erro { mensagem: _ } = *declaracao {
+                    return *declaracao
+                }
+
                 let declaracoes = Box::new(self.declaracoes());
+                if let NoAST::Erro { mensagem: _ } = *declaracoes {
+                    return *declaracoes
+                }
+
                 NoAST::Declaracoes { declaracao, declaracoes }
             }
             _ => NoAST::Vazio
@@ -156,7 +166,12 @@ impl Parser {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let variavel = Box::new(self.variavel());
+                if let NoAST::Erro { mensagem: _ } = *variavel {
+                    return *variavel
+                }
+
                 NoAST::DeclaracaoVariavel { variavel }
             }
             TipoToken::PCtipo => {
@@ -164,15 +179,22 @@ impl Parser {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let ident = match self.match_(TipoToken::Ident) {
                     Ok(token) => Box::new(NoAST::Ident(token)),
                     Err(erro_sintatico) => return erro_sintatico
                 };
+                
                 match self.match_(TipoToken::Delim) {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let tipo = Box::new(self.tipo());
+                if let NoAST::Erro { mensagem: _ } = *tipo {
+                    return *tipo
+                }
+
                 NoAST::DeclaracaoTipo { ident, tipo }
             }
             TipoToken::PCconstante => {
@@ -180,20 +202,32 @@ impl Parser {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let ident = match self.match_(TipoToken::Ident) {
                     Ok(token) => Box::new(NoAST::Ident(token)),
                     Err(erro_sintatico) => return erro_sintatico
                 };
+                
                 match self.match_(TipoToken::Delim) {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let tipo_basico = Box::new(self.tipo_basico());
+                if let NoAST::Erro { mensagem: _ } = *tipo_basico {
+                    return *tipo_basico
+                }
+
                 match self.match_(TipoToken::OpRelIgual) {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let valor_constante = Box::new(self.valor_constante());
+                if let NoAST::Erro { mensagem: _ } = *valor_constante {
+                    return *valor_constante
+                }
+
                 NoAST::DeclaracaoConstante { ident, tipo_basico, valor_constante }
             }
             _ => self.erro_sintatico()
@@ -203,12 +237,25 @@ impl Parser {
     /// variavel : identificador identificadores ':' tipo
     fn variavel(&mut self) -> NoAST {
         let identificador = Box::new(self.identificador());
+        if let NoAST::Erro { mensagem: _ } = *identificador {
+            return *identificador
+        }
+
         let identificadores = Box::new(self.identificadores());
+        if let NoAST::Erro { mensagem: _ } = *identificadores {
+            return *identificadores
+        }
+
         match self.match_(TipoToken::Delim) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let tipo = Box::new(self.tipo());
+        if let NoAST::Erro { mensagem: _ } = *tipo {
+            return *tipo
+        }
+
         NoAST::Variavel { identificador, identificadores, tipo }
     }
 
@@ -218,8 +265,17 @@ impl Parser {
             Ok(token) => Box::new(NoAST::Ident(token)),
             Err(erro_sintatico) => return erro_sintatico
         };
+        
         let identificador2 = Box::new(self.identificador2());
+        if let NoAST::Erro { mensagem: _ } = *identificador2 {
+            return *identificador2
+        }
+
         let dimensao = Box::new(self.dimensao());
+        if let NoAST::Erro { mensagem: _ } = *dimensao {
+            return *dimensao
+        }
+
         NoAST::Identificador { ident, identificador2, dimensao }
     }
 
@@ -231,11 +287,17 @@ impl Parser {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let ident = match self.match_(TipoToken::Ident) {
                     Ok(token) => Box::new(NoAST::Ident(token)),
                     Err(erro_sintatico) => return erro_sintatico
                 };
+                
                 let identificador2 = Box::new(self.identificador2());
+                if let NoAST::Erro { mensagem: _ } = *identificador2 {
+                    return *identificador2
+                }
+
                 NoAST::Identificador2 { ident, identificador2 }
             }
             _ => NoAST::Vazio
@@ -250,8 +312,17 @@ impl Parser {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let identificador = Box::new(self.identificador());
+                if let NoAST::Erro { mensagem: _ } = *identificador {
+                    return *identificador
+                }
+
                 let identificadores = Box::new(self.identificadores());
+                if let NoAST::Erro { mensagem: _ } = *identificadores {
+                    return *identificadores
+                }
+
                 NoAST::Identificadores { identificador, identificadores }
             }
             _ => NoAST::Vazio
@@ -266,12 +337,22 @@ impl Parser {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let exp_aritmetica = Box::new(self.exp_aritmetica());
+                if let NoAST::Erro { mensagem: _ } = *exp_aritmetica {
+                    return *exp_aritmetica
+                }
+
                 match self.match_(TipoToken::FechaCol) {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let dimensao = Box::new(self.dimensao());
+                if let NoAST::Erro { mensagem: _ } = *dimensao {
+                    return *dimensao
+                }
+
                 NoAST::Dimensao { exp_aritmetica, dimensao }
             }
             _ => NoAST::Vazio
@@ -286,7 +367,8 @@ impl Parser {
             | TipoToken::PCliteral
             | TipoToken::PCinteiro
             | TipoToken::PCreal
-            | TipoToken::PClogico => self.tipo_estendido(),
+            | TipoToken::PClogico
+            | TipoToken::Ident => self.tipo_estendido(),
             _ => self.erro_sintatico()
         }
     }
@@ -312,6 +394,7 @@ impl Parser {
             }
             _ => return self.erro_sintatico()
         };
+        
         NoAST::TipoBasico(token)
     }
 
@@ -327,6 +410,7 @@ impl Parser {
                     Ok(token) => token,
                     Err(erro_sintatico) => return erro_sintatico
                 };
+                
                 NoAST::Ident(ident)
             }
             _ => self.erro_sintatico()
@@ -336,7 +420,15 @@ impl Parser {
     /// tipo_estendido : circunflexo tipo_basico_ident
     fn tipo_estendido(&mut self) -> NoAST {
         let circunflexo = Box::new(self.circunflexo());
+        if let NoAST::Erro { mensagem: _ } = *circunflexo {
+            return *circunflexo
+        }
+
         let tipo_basico_ident = Box::new(self.tipo_basico_ident());
+        if let NoAST::Erro { mensagem: _ } = *tipo_basico_ident {
+            return *tipo_basico_ident
+        }
+
         NoAST::TipoExtendido { circunflexo, tipo_basico_ident }
     }
 
@@ -376,6 +468,7 @@ impl Parser {
             }
             _ => return self.erro_sintatico()
         };
+
         NoAST::ValorConstante(token)
     }
 
@@ -385,11 +478,17 @@ impl Parser {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let variaveis = Box::new(self.variaveis());
+        if let NoAST::Erro { mensagem: _ } = *variaveis {
+            return *variaveis
+        }
+
         match self.match_(TipoToken::PCfimRegistro) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         NoAST::Registro { variaveis }
     }
     
@@ -398,7 +497,15 @@ impl Parser {
         match self.lookahead(1).tipo() {
             TipoToken::Ident => {
                 let variavel = Box::new(self.variavel());
+                if let NoAST::Erro { mensagem: _ } = *variavel {
+                    return *variavel
+                }
+
                 let variaveis = Box::new(self.variaveis());
+                if let NoAST::Erro { mensagem: _ } = *variaveis {
+                    return *variaveis
+                }
+
                 NoAST::Variaveis { variavel, variaveis }
             },
             _ => NoAST::Vazio
@@ -414,25 +521,42 @@ impl Parser {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let ident = match self.match_(TipoToken::Ident) {
                     Ok(token) => Box::new(NoAST::Ident(token)),
                     Err(erro_sintatico) => return erro_sintatico
                 };
+                
                 match self.match_(TipoToken::AbrePar) {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let parametros = Box::new(self.parametros());
+                if let NoAST::Erro { mensagem: _ } = *parametros {
+                    return *parametros
+                }
+
                 match self.match_(TipoToken::FechaPar) {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let declaracoes_locais = Box::new(self.declaracoes_locais());
+                if let NoAST::Erro { mensagem: _ } = *declaracoes_locais {
+                    return *declaracoes_locais
+                }
+
                 let cmds = Box::new(self.cmds());
+                if let NoAST::Erro { mensagem: _ } = *cmds {
+                    return *cmds
+                }
+
                 match self.match_(TipoToken::PCfimProcedimento) {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 NoAST::DeclaracaoProcedimento { ident, parametros, declaracoes_locais, cmds }
             }
             TipoToken::PCfuncao => {
@@ -440,30 +564,52 @@ impl Parser {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let ident = match self.match_(TipoToken::Ident) {
                     Ok(token) => Box::new(NoAST::Ident(token)),
                     Err(erro_sintatico) => return erro_sintatico
                 };
+                
                 match self.match_(TipoToken::AbrePar) {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let parametros = Box::new(self.parametros());
+                if let NoAST::Erro { mensagem: _ } = *parametros {
+                    return *parametros
+                }
+
                 match self.match_(TipoToken::FechaPar) {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 match self.match_(TipoToken::Delim) {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let tipo_estendido = Box::new(self.tipo_estendido());
+                if let NoAST::Erro { mensagem: _ } = *tipo_estendido {
+                    return *tipo_estendido
+                }
+
                 let declaracoes_locais = Box::new(self.declaracoes_locais());
+                if let NoAST::Erro { mensagem: _ } = *declaracoes_locais {
+                    return *declaracoes_locais
+                }
+
                 let cmds = Box::new(self.cmds());
+                if let NoAST::Erro { mensagem: _ } = *cmds {
+                    return *cmds
+                }
+
                 match self.match_(TipoToken::PCfimFuncao) {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 NoAST::DeclaracaoFuncao { ident, parametros, tipo_estendido, declaracoes_locais, cmds }
             }
             _ => self.erro_sintatico()
@@ -477,7 +623,15 @@ impl Parser {
             | TipoToken::PCconstante
             | TipoToken::PCtipo => {
                 let declaracao_local = Box::new(self.declaracao_local());
+                if let NoAST::Erro { mensagem: _ } = *declaracao_local {
+                    return *declaracao_local
+                }
+
                 let declaracoes_locais = Box::new(self.declaracoes_locais());
+                if let NoAST::Erro { mensagem: _ } = *declaracoes_locais {
+                    return *declaracoes_locais
+                }
+
                 NoAST::DeclaracoesLocais { declaracao_local, declaracoes_locais }
             }
             _ => NoAST::Vazio
@@ -487,13 +641,30 @@ impl Parser {
     /// parametro : var identificador identificadores ':' tipo_estendido
     fn parametro(&mut self) -> NoAST {
         let var = Box::new(self.var());
+        if let NoAST::Erro { mensagem: _ } = *var {
+            return *var
+        }
+
         let identificador = Box::new(self.identificador());
+        if let NoAST::Erro { mensagem: _ } = *identificador {
+            return *identificador
+        }
+
         let identificadores = Box::new(self.identificadores());
+        if let NoAST::Erro { mensagem: _ } = *identificadores {
+            return *identificadores
+        }
+
         match self.match_(TipoToken::Delim) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let tipo_estendido = Box::new(self.tipo_estendido());
+        if let NoAST::Erro { mensagem: _ } = *tipo_estendido {
+            return *tipo_estendido
+        }
+
         NoAST::Parametro { var, identificador, identificadores, tipo_estendido }
     }
 
@@ -503,7 +674,15 @@ impl Parser {
             TipoToken::PCvar
             | TipoToken::Ident => {
                 let parametro = Box::new(self.parametro());
+                if let NoAST::Erro { mensagem: _ } = *parametro {
+                    return *parametro
+                }
+
                 let parametros2 = Box::new(self.parametros2());
+                if let NoAST::Erro { mensagem: _ } = *parametros2 {
+                    return *parametros2
+                }
+
                 NoAST::Parametros { parametro, parametros2 }
             }
             _ => NoAST::Vazio
@@ -518,8 +697,17 @@ impl Parser {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let parametro = Box::new(self.parametro());
+                if let NoAST::Erro { mensagem: _ } = *parametro {
+                    return *parametro
+                }
+
                 let parametros2 = Box::new(self.parametros2());
+                if let NoAST::Erro { mensagem: _ } = *parametros2 {
+                    return *parametros2
+                }
+
                 NoAST::Parametros2 { parametro, parametros2 }
             }
             _ => NoAST::Vazio
@@ -540,7 +728,15 @@ impl Parser {
     /// corpo : declaracoes_locais cmds
     fn corpo(&mut self) -> NoAST {
         let declaracoes_locais = Box::new(self.declaracoes_locais());
+        if let NoAST::Erro { mensagem: _ } = *declaracoes_locais {
+            return *declaracoes_locais
+        }
+
         let cmds = Box::new(self.cmds());
+        if let NoAST::Erro { mensagem: _ } = *cmds {
+            return *cmds
+        }
+
         NoAST::Corpo { declaracoes_locais, cmds }
     }
 
@@ -574,7 +770,15 @@ impl Parser {
             | TipoToken::PCpara | TipoToken::PCenquanto | TipoToken::PCfaca | TipoToken::Circunflexo
             | TipoToken::Ident | TipoToken::PCretorne => {
                 let cmd = Box::new(self.cmd());
+                if let NoAST::Erro { mensagem: _ } = *cmd {
+                    return *cmd
+                }
+
                 let cmds = Box::new(self.cmds());
+                if let NoAST::Erro { mensagem: _ } = *cmds {
+                    return *cmds
+                }
+
                 NoAST::CMDs { cmd, cmds }
             }
             _ => NoAST::Vazio
@@ -587,17 +791,32 @@ impl Parser {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         match self.match_(TipoToken::AbrePar) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let circunflexo = Box::new(self.circunflexo());
+        if let NoAST::Erro { mensagem: _ } = *circunflexo {
+            return *circunflexo
+        }
+
         let identificador = Box::new(self.identificador());
+        if let NoAST::Erro { mensagem: _ } = *identificador {
+            return *identificador
+        }
+
         let cmd_leia2 = Box::new(self.cmd_leia2());
+        if let NoAST::Erro { mensagem: _ } = *cmd_leia2 {
+            return *cmd_leia2
+        }
+
         match self.match_(TipoToken::FechaPar) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         NoAST::CMDLeia { circunflexo, identificador, cmd_leia2 }
     }
 
@@ -609,9 +828,22 @@ impl Parser {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let circunflexo = Box::new(self.circunflexo());
+                if let NoAST::Erro { mensagem: _ } = *circunflexo {
+                    return *circunflexo
+                }
+
                 let identificador = Box::new(self.identificador());
+                if let NoAST::Erro { mensagem: _ } = *identificador {
+                    return *identificador
+                }
+
                 let cmd_leia2 = Box::new(self.cmd_leia2());
+                if let NoAST::Erro { mensagem: _ } = *cmd_leia2 {
+                    return *cmd_leia2
+                }
+
                 NoAST::CMDLeia2 { circunflexo, identificador, cmd_leia2 }
             }
             _ => NoAST::Vazio
@@ -624,16 +856,27 @@ impl Parser {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         match self.match_(TipoToken::AbrePar) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let expressao = Box::new(self.expressao());
+        if let NoAST::Erro { mensagem: _ } = *expressao {
+            return *expressao
+        }
+
         let expressoes = Box::new(self.expressoes());
+        if let NoAST::Erro { mensagem: _ } = *expressoes {
+            return *expressoes
+        }
+
         match self.match_(TipoToken::FechaPar) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         NoAST::CMDEscreva { expressao, expressoes }
     }
 
@@ -643,17 +886,32 @@ impl Parser {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let expressao = Box::new(self.expressao());
+        if let NoAST::Erro { mensagem: _ } = *expressao {
+            return *expressao
+        }
+
         match self.match_(TipoToken::PCentao) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let cmds = Box::new(self.cmds());
+        if let NoAST::Erro { mensagem: _ } = *cmds {
+            return *cmds
+        }
+
         let senao = Box::new(self.senao());
+        if let NoAST::Erro { mensagem: _ } = *senao {
+            return *senao
+        }
+
         match self.match_(TipoToken::PCfimSe) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         NoAST::CMDSe { expressao, cmds, senao }
     }
 
@@ -665,7 +923,12 @@ impl Parser {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let cmds = Box::new(self.cmds());
+                if let NoAST::Erro { mensagem: _ } = *cmds {
+                    return *cmds
+                }
+
                 NoAST::Senao { cmds }
             }
             _ => NoAST::Vazio
@@ -678,17 +941,32 @@ impl Parser {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let exp_aritmetica = Box::new(self.exp_aritmetica());
+        if let NoAST::Erro { mensagem: _ } = *exp_aritmetica {
+            return *exp_aritmetica
+        }
+
         match self.match_(TipoToken::PCseja) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let selecao = Box::new(self.selecao());
+        if let NoAST::Erro { mensagem: _ } = *selecao {
+            return *selecao
+        }
+
         let senao = Box::new(self.senao());
+        if let NoAST::Erro { mensagem: _ } = *senao {
+            return *senao
+        }
+
         match self.match_(TipoToken::PCfimCaso) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         NoAST::CMDCaso { exp_aritmetica, selecao, senao }
     }
 
@@ -698,29 +976,47 @@ impl Parser {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let ident = match self.match_(TipoToken::Ident) {
             Ok(token) => Box::new(NoAST::Ident(token)),
             Err(erro_sintatico) => return erro_sintatico
         };
+        
         match self.match_(TipoToken::BackArrow) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let exp_aritmetica_1 = Box::new(self.exp_aritmetica());
+        if let NoAST::Erro { mensagem: _ } = *exp_aritmetica_1 {
+            return *exp_aritmetica_1
+        }
+
         match self.match_(TipoToken::PCate) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let exp_aritmetica_2 = Box::new(self.exp_aritmetica());
+        if let NoAST::Erro { mensagem: _ } = *exp_aritmetica_2 {
+            return *exp_aritmetica_2
+        }
+
         match self.match_(TipoToken::PCfaca) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let cmds = Box::new(self.cmds());
+        if let NoAST::Erro { mensagem: _ } = *cmds {
+            return *cmds
+        }
+
         match self.match_(TipoToken::PCfimPara) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         NoAST::CMDPara { ident, exp_aritmetica_1, exp_aritmetica_2, cmds }
     }
 
@@ -730,16 +1026,27 @@ impl Parser {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let expressao = Box::new(self.expressao());
+        if let NoAST::Erro { mensagem: _ } = *expressao {
+            return *expressao
+        }
+
         match self.match_(TipoToken::PCfaca) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let cmds = Box::new(self.cmds());
+        if let NoAST::Erro { mensagem: _ } = *cmds {
+            return *cmds
+        }
+
         match self.match_(TipoToken::PCfimEnquanto) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         NoAST::CMDEnquanto { expressao, cmds }
     }
 
@@ -749,24 +1056,47 @@ impl Parser {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let cmds = Box::new(self.cmds());
+        if let NoAST::Erro { mensagem: _ } = *cmds {
+            return *cmds
+        }
+
         match self.match_(TipoToken::PCate) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let expressao = Box::new(self.expressao());
+        if let NoAST::Erro { mensagem: _ } = *expressao {
+            return *expressao
+        }
+
         NoAST::CMDFaca { cmds, expressao }
     }
 
     /// cmdAtribuicao : circunflexo identificador '<-' expressao
     fn cmd_atribuicao(&mut self) -> NoAST {
         let circunflexo = Box::new(self.circunflexo());
+        if let NoAST::Erro { mensagem: _ } = *circunflexo {
+            return *circunflexo
+        }
+
         let identificador = Box::new(self.identificador());
+        if let NoAST::Erro { mensagem: _ } = *identificador {
+            return *identificador
+        }
+
         match self.match_(TipoToken::BackArrow) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let expressao = Box::new(self.expressao());
+        if let NoAST::Erro { mensagem: _ } = *expressao {
+            return *expressao
+        }
+
         NoAST::CMDAtribuicao { circunflexo, identificador, expressao }
     }
 
@@ -776,16 +1106,27 @@ impl Parser {
             Ok(token) => Box::new(NoAST::Ident(token)),
             Err(erro_sintatico) => return erro_sintatico
         };
+        
         match self.match_(TipoToken::AbrePar) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let expressao = Box::new(self.expressao());
+        if let NoAST::Erro { mensagem: _ } = *expressao {
+            return *expressao
+        }
+
         let expressoes = Box::new(self.expressoes());
+        if let NoAST::Erro { mensagem: _ } = *expressoes {
+            return *expressoes
+        }
+
         match self.match_(TipoToken::FechaPar) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         NoAST::CMDChamada { ident, expressao, expressoes }
     }
 
@@ -795,7 +1136,12 @@ impl Parser {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let expressao = Box::new(self.expressao());
+        if let NoAST::Erro { mensagem: _ } = *expressao {
+            return *expressao
+        }
+
         NoAST::CMDRetorne { expressao }
     }
 
@@ -804,7 +1150,15 @@ impl Parser {
         match self.lookahead(1).tipo() {
             TipoToken::OpAritSub | TipoToken::NumInt => {
                 let item_selecao = Box::new(self.item_selecao());
+                if let NoAST::Erro { mensagem: _ } = *item_selecao {
+                    return *item_selecao
+                }
+
                 let selecao = Box::new(self.selecao());
+                if let NoAST::Erro { mensagem: _ } = *selecao {
+                    return *selecao
+                }
+
                 NoAST::Selecao { item_selecao, selecao }
             }
             _ => NoAST::Vazio
@@ -814,29 +1168,55 @@ impl Parser {
     /// item_selecao : constantes ':' cmds
     fn item_selecao(&mut self) -> NoAST {
         let constantes = Box::new(self.constantes());
+        if let NoAST::Erro { mensagem: _ } = *constantes {
+            return *constantes
+        }
+
         match self.match_(TipoToken::Delim) {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
         let cmds = Box::new(self.cmds());
+        if let NoAST::Erro { mensagem: _ } = *cmds {
+            return *cmds
+        }
+
         NoAST::ItemSelecao { constantes, cmds }
     }
     
     /// constantes : numero_intervalo numero_intervalos
     fn constantes(&mut self) -> NoAST {
         let numero_intervalo = Box::new(self.numero_intervalo());
+        if let NoAST::Erro { mensagem: _ } = *numero_intervalo {
+            return *numero_intervalo
+        }
+
         let numero_intervalos = Box::new(self.numero_intervalos());
+        if let NoAST::Erro { mensagem: _ } = *numero_intervalos {
+            return *numero_intervalos
+        }
+
         NoAST::Constantes { numero_intervalo, numero_intervalos }
     }
     
     /// numero_intervalo : op_unario NUM_INT numero_intervalo2
     fn numero_intervalo(&mut self) -> NoAST {
         let op_unario = Box::new(self.op_unario());
+        if let NoAST::Erro { mensagem: _ } = *op_unario {
+            return *op_unario
+        }
+
         let num_int = match self.match_(TipoToken::NumInt) {
             Ok(token) => Box::new(NoAST::NumInt(token)),
             Err(erro_sintatico) => return erro_sintatico
         };
+        
         let numero_intervalo2 = Box::new(self.numero_intervalo2());
+        if let NoAST::Erro { mensagem: _ } = *numero_intervalo2 {
+            return *numero_intervalo2
+        }
+
         NoAST::NumeroIntervalo { op_unario, num_int, numero_intervalo2 }
     }
     
@@ -848,8 +1228,17 @@ impl Parser {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let numero_intervalo = Box::new(self.numero_intervalo());
+                if let NoAST::Erro { mensagem: _ } = *numero_intervalo {
+                    return *numero_intervalo
+                }
+
                 let numero_intervalos = Box::new(self.numero_intervalos());
+                if let NoAST::Erro { mensagem: _ } = *numero_intervalos {
+                    return *numero_intervalos
+                }
+
                 NoAST::NumeroIntervalos { numero_intervalo, numero_intervalos }
             }
             _ => NoAST::Vazio
@@ -864,11 +1253,17 @@ impl Parser {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let op_unario = Box::new(self.op_unario());
+                if let NoAST::Erro { mensagem: _ } = *op_unario {
+                    return *op_unario
+                }
+
                 let num_int = match self.match_(TipoToken::NumInt) {
                     Ok(token) => Box::new(NoAST::NumInt(token)),
                     Err(erro_sintatico) => return erro_sintatico
                 };
+                
                 NoAST::NumeroIntervalo2 { op_unario, num_int }
             }
             _ => NoAST::Vazio
@@ -883,6 +1278,7 @@ impl Parser {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 NoAST::OpUnario
             }
             _ => NoAST::Vazio
@@ -892,14 +1288,30 @@ impl Parser {
     /// exp_aritmetica : termo termos
     fn exp_aritmetica(&mut self) -> NoAST {
         let termo = Box::new(self.termo());
+        if let NoAST::Erro { mensagem: _ } = *termo {
+            return *termo
+        }
+
         let termos = Box::new(self.termos());
+        if let NoAST::Erro { mensagem: _ } = *termos {
+            return *termos
+        }
+
         NoAST::ExpAritmetica { termo, termos }
     }
     
     /// termo : fator fatores
     fn termo(&mut self) -> NoAST {
         let fator = Box::new(self.fator());
+        if let NoAST::Erro { mensagem: _ } = *fator {
+            return *fator
+        }
+
         let fatores = Box::new(self.fatores());
+        if let NoAST::Erro { mensagem: _ } = *fatores {
+            return *fatores
+        }
+
         NoAST::Termo { fator, fatores }
     }
     
@@ -908,8 +1320,20 @@ impl Parser {
         match self.lookahead(1).tipo() {
             TipoToken::OpAritSoma | TipoToken::OpAritSub => {
                 let op1 = Box::new(self.op1());
+                if let NoAST::Erro { mensagem: _ } = *op1 {
+                    return *op1
+                }
+
                 let termo = Box::new(self.termo());
+                if let NoAST::Erro { mensagem: _ } = *termo {
+                    return *termo
+                }
+
                 let termos = Box::new(self.termos());
+                if let NoAST::Erro { mensagem: _ } = *termos {
+                    return *termos
+                }
+
                 NoAST::Termos { op1, termo, termos }
             }
             _ => NoAST::Vazio
@@ -919,7 +1343,15 @@ impl Parser {
     /// fator : parcela parcelas
     fn fator(&mut self) -> NoAST {
         let parcela = Box::new(self.parcela());
+        if let NoAST::Erro { mensagem: _ } = *parcela {
+            return *parcela
+        }
+
         let parcelas = Box::new(self.parcelas());
+        if let NoAST::Erro { mensagem: _ } = *parcelas {
+            return *parcelas
+        }
+
         NoAST::Fator { parcela, parcelas }
     }
     
@@ -928,8 +1360,20 @@ impl Parser {
         match self.lookahead(1).tipo() {
             TipoToken::OpAritMult | TipoToken::OpAritDiv => {
                 let op2 = Box::new(self.op2());
+                if let NoAST::Erro { mensagem: _ } = *op2 {
+                    return *op2
+                }
+
                 let fator = Box::new(self.fator());
+                if let NoAST::Erro { mensagem: _ } = *fator {
+                    return *fator
+                }
+
                 let fatores = Box::new(self.fatores());
+                if let NoAST::Erro { mensagem: _ } = *fatores {
+                    return *fatores
+                }
+
                 NoAST::Fatores { op2, fator, fatores }
             }
             _ => NoAST::Vazio
@@ -986,7 +1430,15 @@ impl Parser {
             | TipoToken::NumReal
             | TipoToken::AbrePar => {
                 let op_unario = Box::new(self.op_unario());
+                if let NoAST::Erro { mensagem: _ } = *op_unario {
+                    return *op_unario
+                }
+
                 let parcela_unario = Box::new(self.parcela_unario());
+                if let NoAST::Erro { mensagem: _ } = *parcela_unario {
+                    return *parcela_unario
+                }
+
                 NoAST::Parcela { op_unario, parcela_unario }
             }
             TipoToken::EComercial
@@ -1000,8 +1452,20 @@ impl Parser {
         match self.lookahead(1).tipo() {
             TipoToken::Porcento => {
                 let op3 = Box::new(self.op3());
+                if let NoAST::Erro { mensagem: _ } = *op3 {
+                    return *op3
+                }
+
                 let parcela = Box::new(self.parcela());
+                if let NoAST::Erro { mensagem: _ } = *parcela {
+                    return *parcela
+                }
+
                 let parcelas = Box::new(self.parcelas());
+                if let NoAST::Erro { mensagem: _ } = *parcelas {
+                    return *parcelas
+                }
+
                 NoAST::Parcelas { op3, parcela, parcelas }
             }
             _ => NoAST::Vazio
@@ -1017,7 +1481,15 @@ impl Parser {
         match self.lookahead(1).tipo() {
             TipoToken::Circunflexo => {
                 let circunflexo = Box::new(self.circunflexo());
+                if let NoAST::Erro { mensagem: _ } = *circunflexo {
+                    return *circunflexo
+                }
+
                 let identificador = Box::new(self.identificador());
+                if let NoAST::Erro { mensagem: _ } = *identificador {
+                    return *identificador
+                }
+
                 NoAST::ParcelaUnario1 { circunflexo, identificador }
             }
             TipoToken::Ident => {
@@ -1027,16 +1499,27 @@ impl Parser {
                             Ok(token) => Box::new(NoAST::Ident(token)),
                             Err(erro_sintatico) => return erro_sintatico
                         };
+                        
                         match self.match_(TipoToken::AbrePar) {
                             Ok(_) => {},
                             Err(erro_sintatico) => return erro_sintatico
                         }
+                        
                         let expressao = Box::new(self.expressao());
+                        if let NoAST::Erro { mensagem: _ } = *expressao {
+                            return *expressao
+                        }
+
                         let expressoes = Box::new(self.expressoes());
+                        if let NoAST::Erro { mensagem: _ } = *expressoes {
+                            return *expressoes
+                        }
+
                         match self.match_(TipoToken::FechaPar) {
                             Ok(_) => {},
                             Err(erro_sintatico) => return erro_sintatico
                         }
+                        
                         NoAST::ParcelaUnario2 { ident, expressao, expressoes }
                     }
                     _ => self.identificador()
@@ -1047,11 +1530,17 @@ impl Parser {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let expressao = Box::new(self.expressao());
+                if let NoAST::Erro { mensagem: _ } = *expressao {
+                    return *expressao
+                }
+
                 match self.match_(TipoToken::FechaPar) {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 NoAST::ParcelaUnario3 { expressao }
             }
             TipoToken::NumInt => match self.match_(TipoToken::NumInt) {
@@ -1074,7 +1563,12 @@ impl Parser {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let identificador = Box::new(self.identificador());
+                if let NoAST::Erro { mensagem: _ } = *identificador {
+                    return *identificador
+                }
+
                 NoAST::ParcelaNaoUnario { identificador }
             }
             TipoToken::Cadeia => match self.match_(TipoToken::Cadeia) {
@@ -1088,7 +1582,15 @@ impl Parser {
     /// exp_relacional : exp_aritmetica exp_relacional2
     fn exp_relacional(&mut self) -> NoAST {
         let exp_aritmetica = Box::new(self.exp_aritmetica());
+        if let NoAST::Erro { mensagem: _ } = *exp_aritmetica {
+            return *exp_aritmetica
+        }
+
         let exp_relacional2 = Box::new(self.exp_relacional2());
+        if let NoAST::Erro { mensagem: _ } = *exp_relacional2 {
+            return *exp_relacional2
+        }
+
         NoAST::ExpRelacional { exp_aritmetica, exp_relacional2 }
     }
     
@@ -1102,7 +1604,15 @@ impl Parser {
             | TipoToken::OpRelMaior
             | TipoToken::OpRelMenor => {
                 let op_relacional = Box::new(self.op_relacional());
+                if let NoAST::Erro { mensagem: _ } = *op_relacional {
+                    return *op_relacional
+                }
+
                 let exp_aritmetica = Box::new(self.exp_aritmetica());
+                if let NoAST::Erro { mensagem: _ } = *exp_aritmetica {
+                    return *exp_aritmetica
+                }
+
                 NoAST::ExpRelacional2 { op_relacional, exp_aritmetica }
             }
             _ => NoAST::Vazio
@@ -1144,7 +1654,15 @@ impl Parser {
     /// expressao : termo_logico termos_logicos
     fn expressao(&mut self) -> NoAST {
         let termo_logico = Box::new(self.termo_logico());
+        if let NoAST::Erro { mensagem: _ } = *termo_logico {
+            return *termo_logico
+        }
+
         let termos_logicos = Box::new(self.termos_logicos());
+        if let NoAST::Erro { mensagem: _ } = *termos_logicos {
+            return *termos_logicos
+        }
+
         NoAST::Expressao { termo_logico, termos_logicos }
     }
     
@@ -1156,8 +1674,17 @@ impl Parser {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+                
                 let expressao = Box::new(self.expressao());
+                if let NoAST::Erro { mensagem: _ } = *expressao {
+                    return *expressao
+                }
+
                 let expressoes = Box::new(self.expressoes());
+                if let NoAST::Erro { mensagem: _ } = *expressoes {
+                    return *expressoes
+                }
+
                 NoAST::Expressoes { expressao, expressoes }
             }
             _ => NoAST::Vazio
@@ -1167,7 +1694,15 @@ impl Parser {
     /// termo_logico : fator_logico fatores_logicos
     fn termo_logico(&mut self) -> NoAST {
         let fator_logico = Box::new(self.fator_logico());
+        if let NoAST::Erro { mensagem: _ } = *fator_logico {
+            return *fator_logico
+        }
+
         let fatores_logicos = Box::new(self.fatores_logicos());
+        if let NoAST::Erro { mensagem: _ } = *fatores_logicos {
+            return *fatores_logicos
+        }
+
         NoAST::TermoLogico { fator_logico, fatores_logicos }
     }
     
@@ -1176,8 +1711,20 @@ impl Parser {
         match self.lookahead(1).tipo() {
             TipoToken::PCou => {
                 let op_logico_1 = Box::new(self.op_logico_1());
+                if let NoAST::Erro { mensagem: _ } = *op_logico_1 {
+                    return *op_logico_1
+                }
+
                 let termo_logico = Box::new(self.termo_logico());
+                if let NoAST::Erro { mensagem: _ } = *termo_logico {
+                    return *termo_logico
+                }
+
                 let termos_logicos = Box::new(self.termos_logicos());
+                if let NoAST::Erro { mensagem: _ } = *termos_logicos {
+                    return *termos_logicos
+                }
+
                 NoAST::TermosLogicos { op_logico_1, termo_logico, termos_logicos }
             }
             _ => NoAST::Vazio
@@ -1187,7 +1734,15 @@ impl Parser {
     /// fator_logico : nao parcela_logica
     fn fator_logico(&mut self) -> NoAST {
         let nao = Box::new(self.nao());
+        if let NoAST::Erro { mensagem: _ } = *nao {
+            return *nao
+        }
+
         let parcela_logica = Box::new(self.parcela_logica());
+        if let NoAST::Erro { mensagem: _ } = *parcela_logica {
+            return *parcela_logica
+        }
+
         NoAST::FatorLogico { nao, parcela_logica }
     }
     
@@ -1196,8 +1751,20 @@ impl Parser {
         match self.lookahead(1).tipo() {
             TipoToken::PCe => {
                 let op_logico_2 = Box::new(self.op_logico_2());
+                if let NoAST::Erro { mensagem: _ } = *op_logico_2 {
+                    return *op_logico_2
+                }
+
                 let fator_logico = Box::new(self.fator_logico());
+                if let NoAST::Erro { mensagem: _ } = *fator_logico {
+                    return *fator_logico
+                }
+
                 let fatores_logicos = Box::new(self.fatores_logicos());
+                if let NoAST::Erro { mensagem: _ } = *fatores_logicos {
+                    return *fatores_logicos
+                }
+
                 NoAST::FatoresLogicos { op_logico_2, fator_logico, fatores_logicos }
             }
             _ => NoAST::Vazio

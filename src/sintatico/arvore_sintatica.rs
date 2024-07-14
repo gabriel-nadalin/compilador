@@ -420,3 +420,20 @@ pub enum NoAST {
     Vazio,
     Erro { mensagem: String },
 }
+
+impl NoAST {
+    pub fn get_tokens(self) -> Vec<Token> {
+        match self {
+            NoAST::ValorConstante (token)
+            | NoAST::Ident (token)
+            | NoAST::TipoBasico (token)
+            | NoAST::Op1 (token)
+            | NoAST::Op2 (token)
+            | NoAST::NumInt (token)
+            | NoAST::NumReal (token)
+            | NoAST::Cadeia (token)
+            | NoAST::OpRelacional (token) => vec![token],
+            _ => vec![]
+        }
+    }
+}

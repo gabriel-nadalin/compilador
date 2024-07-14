@@ -1,6 +1,7 @@
 use std::env;
 use std::fs::File;
 use std::io::Write;
+
 use compilador::lexico::{token::TipoToken, Lexico};
 
 fn main() {
