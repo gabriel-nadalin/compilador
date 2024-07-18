@@ -151,7 +151,7 @@ pub enum NoAST {
         cmd: Box<NoAST>,
         cmds: Box<NoAST>,
     },
-    // cmd : cmdLeia | cmdEscreva | cmdSe | cmdCaso | cmdPara| cmdEnquanto
+    // cmd : cmdLeia | cmdEscreva | cmdSe | cmdCaso | cmdPara | cmdEnquanto
     //     | cmdFaca | cmdAtribuicao | cmdChamada | cmdRetorne
 
     // cmdLeia : 'leia' '(' circunflexo identificador cmdLeia2 ')'
@@ -422,7 +422,7 @@ pub enum NoAST {
 }
 
 impl NoAST {
-    pub fn get_tokens(self) -> Vec<Token> {
+    pub fn get_tokens(&self) -> Vec<Token> {
         match self {
             NoAST::ValorConstante (token)
             | NoAST::Ident (token)
@@ -432,7 +432,34 @@ impl NoAST {
             | NoAST::NumInt (token)
             | NoAST::NumReal (token)
             | NoAST::Cadeia (token)
-            | NoAST::OpRelacional (token) => vec![token],
+            | NoAST::OpRelacional (token) => vec![token.clone()],
+            _ => vec![]
+        }
+    }
+    
+    pub fn get_idents(&self) -> Vec<Token> {
+        match self {
+            NoAST::Ident (token) => vec![token.clone()],
+            NoAST::Identificador { ident, identificador2, dimensao: _ } => {
+                let mut idents = ident.get_idents();
+                idents.append(&mut identificador2.get_idents());
+                idents
+            }
+            NoAST::Identificador2 { ident, identificador2 } => {
+                let mut idents = ident.get_idents();
+                idents.append(&mut identificador2.get_idents());
+                idents
+            }
+            NoAST::Identificadores { identificador, identificadores } => {
+                let mut idents = identificador.get_idents();
+                idents.append(&mut identificadores.get_idents());
+                idents
+            }
+            NoAST::Variavel { identificador, identificadores, tipo: _ } => {
+                let mut idents = identificador.get_idents();
+                idents.append(&mut identificadores.get_idents());
+                idents
+            }
             _ => vec![]
         }
     }
