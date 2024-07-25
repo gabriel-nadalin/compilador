@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TipoSimbolo {
     Cadeia,
     Real,
@@ -8,10 +8,10 @@ pub enum TipoSimbolo {
     Logico,
     Registro,
     Endereco(Box<TipoSimbolo>),
-    Invalido,
+    Vazio,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Simbolo {
     nome: String,
     tipo: TipoSimbolo,
@@ -24,8 +24,17 @@ impl Simbolo {
             tipo,
         }
     }
+
+    pub fn nome(&self) -> String {
+        self.nome.clone()
+    }
+
+    pub fn tipo(&self) -> TipoSimbolo {
+        self.tipo.clone()
+    }
 }
 
+#[derive(Debug, Clone)]
 pub struct TabelaDeSimbolos {
     tabela: HashMap<String, Simbolo>
 }
@@ -38,11 +47,11 @@ impl TabelaDeSimbolos {
     }
 
     pub fn inserir(&mut self, nome: &str, tipo: &TipoSimbolo) {
-        self.tabela.insert(nome.to_string(), Simbolo::new(nome.to_string(), tipo.clone())).unwrap();
+        self.tabela.insert(nome.to_string(), Simbolo::new(nome.to_string(), tipo.clone()));
     }
 
-    pub fn verificar(self, nome: &str) -> Simbolo {
-        self.tabela.get(nome).unwrap().clone()
+    pub fn verificar(&self, nome: &str) -> Option<Simbolo> {
+        self.tabela.get(nome).cloned()
     }
 
     pub fn existe(&self, nome: &str) -> bool {

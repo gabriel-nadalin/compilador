@@ -16,7 +16,8 @@ fn main() {
     let lex = Lexico::new(&args[1]);
     let mut parser = Parser::new(lex);
     let ast = parser.programa();
-    if let NoAST::Erro { ref mensagem } = ast {
+    if ast.is_erro() {
+        let mensagem = ast.get_erro().unwrap();
         file_out.write_all(mensagem.as_bytes()).unwrap();
     }
     let mut semantico = Semantico::new();
@@ -24,5 +25,5 @@ fn main() {
     for erro in semantico.get_erros() {
         file_out.write_all(erro.as_bytes()).unwrap();
     }
-    file_out.write_all("Fim da compilacao".as_bytes()).unwrap();
+    file_out.write_all("Fim da compilacao\n".as_bytes()).unwrap();
 }
