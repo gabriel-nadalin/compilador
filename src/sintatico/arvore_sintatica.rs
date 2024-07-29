@@ -1,5 +1,9 @@
-use crate::{lexico::token::{TipoToken, Token}, semantico::tabela_de_simbolos::TipoSimbolo};
+use crate::{
+    lexico::token::{TipoToken, Token},
+    semantico::{escopos::Escopos, tabela_de_simbolos::TipoSimbolo}
+};
 
+#[derive(Debug, Clone)]
 pub enum RegraAST {
     // programa : declaracoes 'algoritmo' corpo 'fim_algoritmo'
     Programa,
@@ -233,6 +237,7 @@ pub enum RegraAST {
     Erro { mensagem: String },
 }
 
+#[derive(Debug, Clone)]
 pub struct NoAST {
     regra: RegraAST,
     filhos: Vec<NoAST>,
@@ -339,8 +344,13 @@ impl NoAST {
         }
     }
 
-    pub fn tipo(&self) -> TipoSimbolo {
+    pub fn tipo(&self, escopos: &Escopos) -> TipoSimbolo {
         match &self.regra {
+            RegraAST::ConstanteLogica(_token) => TipoSimbolo::Logico,
+            RegraAST::Cadeia(_token) => TipoSimbolo::Cadeia,
+            RegraAST::NumInt(_token) => TipoSimbolo::Inteiro,
+            RegraAST::NumReal(_token) => TipoSimbolo::Real,
+            RegraAST::Registro => TipoSimbolo::Registro,
             RegraAST::TipoBasico (token) => {
                 match token.tipo() {
                     TipoToken::PCliteral => TipoSimbolo::Cadeia,
@@ -350,19 +360,90 @@ impl NoAST {
                     _ => TipoSimbolo::Vazio
                 }
             },
-            RegraAST::Registro => TipoSimbolo::Registro,
-            _ => {
-                // println!("{:#?}", self.idents()); 
-                // if self.filhos.is_empty() {
-                //     return TipoSimbolo::Vazio;
-                // }
-                // let primeiro = &self.filhos[0];
-                // if self.filhos.iter().all(|filho| filho.tipo() == primeiro.tipo()) {
-                //     primeiro.tipo()
-                // } else {
-                    TipoSimbolo::Vazio
-                // }
+            RegraAST::ParcelaNaoUnario
+            | RegraAST::ParcelaUnario2
+            | RegraAST::ParcelaUnario3 => self.filhos()[0].tipo(escopos),
+            RegraAST::FatorLogico
+            | RegraAST::TipoExtendido
+            | RegraAST::ParcelaUnario1
+            | RegraAST::ExpRelacional2 => self.filhos()[1].tipo(escopos),
+            RegraAST::Variavel => self.filhos()[2].tipo(escopos),
+            RegraAST::Expressao
+            | RegraAST::TermoLogico
+            | RegraAST::ExpAritmetica
+            | RegraAST::Termo
+            | RegraAST::Fator => {
+                if self.filhos.is_empty() {
+                    return TipoSimbolo::Vazio;
+                }
+                let tipo1 = self.filhos[0].tipo(escopos);
+                let tipo2 = self.filhos[1].tipo(escopos);
+                if tipo1 == tipo2 || ((tipo1 == TipoSimbolo::Real || tipo1 == TipoSimbolo::Inteiro) && (tipo2 == TipoSimbolo::Real || tipo2 == TipoSimbolo::Inteiro)) || tipo2 == TipoSimbolo::Vazio {
+                    tipo1
+                } else {
+                    TipoSimbolo::Invalido
+                }
             }
+            RegraAST::Expressoes
+            | RegraAST::TermosLogicos
+            | RegraAST::FatoresLogicos
+            | RegraAST::Termos
+            | RegraAST::Fatores
+            | RegraAST::Parcelas => {
+                if self.filhos.is_empty() {
+                    return TipoSimbolo::Vazio;
+                }
+                let tipo1 = self.filhos[1].tipo(escopos);
+                let tipo2 = self.filhos[2].tipo(escopos);
+                if tipo1 == tipo2 || ((tipo1 == TipoSimbolo::Real || tipo1 == TipoSimbolo::Inteiro) && (tipo2 == TipoSimbolo::Real || tipo2 == TipoSimbolo::Inteiro)) || tipo2 == TipoSimbolo::Vazio {
+                    tipo1
+                } else {
+                    TipoSimbolo::Invalido
+                }
+            }
+            RegraAST::ExpRelacional => {
+                if self.filhos.is_empty() {
+                    return TipoSimbolo::Vazio;
+                }
+                let tipo1 = self.filhos[0].tipo(escopos);
+                let tipo2 = self.filhos[1].tipo(escopos);
+                if tipo2 == TipoSimbolo::Vazio {
+                    tipo1
+                } else if tipo1 == tipo2 || ((tipo1 == TipoSimbolo::Real || tipo1 == TipoSimbolo::Inteiro) && (tipo2 == TipoSimbolo::Real || tipo2 == TipoSimbolo::Inteiro)) || tipo2 == TipoSimbolo::Vazio {
+                    TipoSimbolo::Logico
+                } else {
+                    TipoSimbolo::Invalido
+                }
+            }
+            RegraAST::Parcela => {
+                if self.filhos.len() == 1 {
+                    self.filhos[0].tipo(escopos)
+                } else {
+                    self.filhos[1].tipo(escopos)
+                }
+            }
+            RegraAST::Identificador => {
+                // constroi o nome do identificador 
+                let nome = self.idents()
+                    .iter()
+                    .map(|token| token.lexema().to_string())
+                    .collect::<Vec<String>>()
+                    .join(".");
+                if escopos.existe(&nome) {
+                    escopos.verificar(&nome).unwrap().tipo()
+                } else {
+                    TipoSimbolo::Invalido
+                }
+            }
+            RegraAST::Ident(ident) => {
+                let nome = ident.lexema();
+                if escopos.existe(&nome) {
+                    escopos.verificar(&nome).unwrap().tipo()
+                } else {
+                    TipoSimbolo::Invalido
+                }
+            }
+            _ => TipoSimbolo::Vazio
         }
     }
 }

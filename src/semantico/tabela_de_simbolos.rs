@@ -6,9 +6,11 @@ pub enum TipoSimbolo {
     Real,
     Inteiro,
     Logico,
+    Ident,
     Registro,
     Endereco(Box<TipoSimbolo>),
     Vazio,
+    Invalido,
 }
 
 #[derive(Debug, Clone, PartialEq)]

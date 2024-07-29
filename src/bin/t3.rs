@@ -5,9 +5,7 @@ use std::io::Write;
 use compilador::{
     lexico::Lexico,
     semantico::{visitor::Visitor, Semantico},
-    sintatico::{
-        arvore_sintatica::NoAST, parser::Parser
-    }
+    sintatico::parser::Parser
 };
 
 fn main() {

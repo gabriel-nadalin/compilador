@@ -3,7 +3,7 @@ pub mod tabela_de_simbolos;
 pub mod escopos;
 
 use escopos::Escopos;
-use tabela_de_simbolos::{TabelaDeSimbolos, TipoSimbolo};
+use tabela_de_simbolos::TipoSimbolo;
 use visitor::Visitor;
 
 use crate::sintatico::arvore_sintatica::{NoAST, RegraAST};
@@ -24,6 +24,13 @@ impl Semantico {
     pub fn get_erros(&self) -> Vec<String> {
         self.erros.clone()
     }
+
+    pub fn tipo_ident(&self, ident: &str) -> TipoSimbolo {
+        match self.escopos.verificar(ident) {
+            Some(simbolo) => simbolo.tipo(),
+            None => TipoSimbolo::Vazio
+        }
+    }
 }
 
 impl Visitor for Semantico {
@@ -41,7 +48,7 @@ impl Visitor for Semantico {
             RegraAST::DeclaracaoVariavel => {
                 let variavel = &no.filhos()[0];
                 let idents = variavel.idents();
-                let tipo = variavel.tipo();
+                let tipo = variavel.tipo(&self.escopos.clone());
 
                 let escopo_atual = self.escopos.escopo_atual();
                 for ident in idents {
@@ -58,6 +65,7 @@ impl Visitor for Semantico {
             //     | 'tipo' IDENT ':' tipo
             RegraAST::DeclaracaoTipo => {
                 let filhos = no.filhos();
+                let escopos = self.escopos.clone();
 
                 let ident = filhos[0].token().unwrap();
                 let nome = ident.lexema();
@@ -68,7 +76,7 @@ impl Visitor for Semantico {
                     let mensagem = format!("Linha {}: identificador {} ja declarado anteriormente\n", ident.linha(), nome);
                     self.erros.push(mensagem);
                 } else {
-                    let tipo = filhos[1].tipo();
+                    let tipo = filhos[1].tipo(&escopos);
                     escopo_atual.inserir(&nome, &tipo)
                 }
 
@@ -77,6 +85,7 @@ impl Visitor for Semantico {
             //     | 'constante' IDENT ':' tipo_basico '=' valor_constante
             RegraAST::DeclaracaoConstante => {
                 let filhos = no.filhos();
+                let escopos = self.escopos.clone();
 
                 let ident = filhos[0].token().unwrap();
                 let nome = ident.lexema();
@@ -87,7 +96,7 @@ impl Visitor for Semantico {
                     let mensagem = format!("Linha {}: identificador {} ja declarado anteriormente\n", ident.linha(), nome);
                     self.erros.push(mensagem);
                 } else {
-                    let mut tipo = filhos[1].tipo();
+                    let mut tipo = filhos[1].tipo(&escopos);
                     if let TipoSimbolo::Vazio = tipo {
                         tipo = TipoSimbolo::Inteiro
                     }
@@ -157,6 +166,7 @@ impl Visitor for Semantico {
             //     'procedimento' IDENT '(' parametros ')' declaracoes_locais cmds 'fim_procedimento'
             RegraAST::DeclaracaoProcedimento => {
                 let filhos = no.filhos();
+                let escopos = self.escopos.clone();
 
                 let ident = filhos[0].token().unwrap();
                 let nome = ident.lexema();
@@ -167,7 +177,7 @@ impl Visitor for Semantico {
                     let mensagem = format!("Linha {}: identificador {} ja declarado anteriormente\n", ident.linha(), nome);
                     self.erros.push(mensagem);
                 } else {
-                    let tipo = filhos[1].tipo();
+                    let tipo = filhos[1].tipo(&escopos);
                     escopo_atual.inserir(&nome, &tipo)
                 }
             }
@@ -175,6 +185,7 @@ impl Visitor for Semantico {
             //     | 'funcao' IDENT '(' parametros ')' ':' tipo_estendido declaracoes_locais cmds 'fim_funcao'
             RegraAST::DeclaracaoFuncao => {
                 let filhos = no.filhos();
+                let escopos = self.escopos.clone();
 
                 let ident = filhos[0].token().unwrap();
                 let nome = ident.lexema();
@@ -185,7 +196,7 @@ impl Visitor for Semantico {
                     let mensagem = format!("Linha {}: identificador {} ja declarado anteriormente\n", ident.linha(), nome);
                     self.erros.push(mensagem);
                 } else {
-                    let tipo = filhos[1].tipo();
+                    let tipo = filhos[1].tipo(&escopos);
                     escopo_atual.inserir(&nome, &tipo)
                 }
 
@@ -243,6 +254,7 @@ impl Visitor for Semantico {
             RegraAST::CMDAtribuicao => {
                 let filhos = no.filhos();
 
+                // constroi o nome do identificador 
                 let nome = filhos[1].idents()
                     .iter()
                     .map(|token| token.lexema().to_string())
@@ -250,15 +262,17 @@ impl Visitor for Semantico {
                     .join(".");
 
                 let expressao = &filhos[2];
-                let tipo_exp = expressao.tipo();
+                let tipo_exp = expressao.tipo(&self.escopos);
                 let tipo_ident = if self.escopos.existe(&nome) {
                     self.escopos.verificar(&nome).unwrap().tipo()
                 } else {
-                    TipoSimbolo::Vazio
+                    TipoSimbolo::Invalido
                 };
 
-                if tipo_exp != tipo_ident {
-                    let mensagem = format!("Linha {}: atribuicao nao compativel para {}", no.linha(), nome);
+                if (tipo_exp == TipoSimbolo::Real || tipo_exp == TipoSimbolo::Inteiro) && (tipo_ident == TipoSimbolo::Real || tipo_ident == TipoSimbolo::Inteiro) {
+
+                } else if tipo_exp != tipo_ident && tipo_ident != TipoSimbolo::Invalido {
+                    let mensagem = format!("Linha {}: atribuicao nao compativel para {}\n", no.linha(), nome);
                     self.erros.push(mensagem);
                 }
             }

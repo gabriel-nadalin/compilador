@@ -1,5 +1,6 @@
 use crate::semantico::tabela_de_simbolos::{Simbolo, TabelaDeSimbolos};
 
+#[derive(Debug, Clone)]
 pub struct Escopos {
     tabelas: Vec<TabelaDeSimbolos>,
 }

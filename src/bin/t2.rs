@@ -4,10 +4,7 @@ use std::io::Write;
 
 use compilador::{
     lexico::Lexico,
-    sintatico::{
-        parser::Parser,
-        arvore_sintatica::NoAST,
-    }
+    sintatico::parser::Parser
 };
 
 fn main() {
