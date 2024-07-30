@@ -8,6 +8,8 @@ use crate::{
 
 const BUFFER_SIZE: usize = 10;
 
+/// analisador sintatico\
+/// transforma stream de tokens em uma arvore sintatica ou apresenta o primeiro erro sintatico encontrado
 pub struct Parser {
     buffer_tokens: Vec<Token>,
     lex: Lexico,
@@ -28,7 +30,7 @@ impl Parser {
         parser
     }
 
-    /// recarrega buffer, le proximo token e retorna token anterior
+    /// recarrega buffer, le proximo token e retorna token consumido
     fn read_token(&mut self) -> Token {
 
         // remove token anterior
@@ -74,14 +76,15 @@ impl Parser {
         self.buffer_tokens[k - 1].copy()
     }
 
-    /// interrompe execucao e imprime mensagem de erro constando linha e lexema atuais
+    /// retorna mensagem de erro constando linha e lexema atuais\
+    /// todo erro lexico ou sintatico eh propagado ate o no raiz recursivamente
     fn erro_sintatico(&mut self) -> NoAST {
-        let linha = self.buffer_tokens[0].linha();
-        let lexema = self.buffer_tokens[0].lexema();
-        let mensagem = if self.buffer_tokens[0].tipo() == TipoToken::Erro {
-            lexema + "Fim da compilacao\n"
+        let linha = self.lookahead(1).linha();
+        let lexema = self.lookahead(1).lexema();
+        let mensagem = if self.lookahead(1).tipo() == TipoToken::Erro {
+            lexema
         } else {
-            format!("Linha {}: erro sintatico proximo a {}\nFim da compilacao\n", linha, lexema)
+            format!("Linha {}: erro sintatico proximo a {}\n", linha, lexema)
         };
         
         NoAST::new(RegraAST::Erro { mensagem }, vec![]) 

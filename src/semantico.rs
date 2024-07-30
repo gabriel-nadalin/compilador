@@ -8,12 +8,15 @@ use visitor::Visitor;
 
 use crate::sintatico::arvore_sintatica::{NoAST, RegraAST};
 
+/// analisador semantico
 pub struct Semantico {
     escopos: Escopos,
     erros: Vec<String>,
 }
 
 impl Semantico {
+
+    /// retorna instancia de analisador semantico
     pub fn new() -> Self {
         Self {
             escopos: Escopos::new(),
@@ -21,19 +24,15 @@ impl Semantico {
         }
     }
 
+    /// retorna vetor de erros semanticos
     pub fn get_erros(&self) -> Vec<String> {
         self.erros.clone()
-    }
-
-    pub fn tipo_ident(&self, ident: &str) -> TipoSimbolo {
-        match self.escopos.verificar(ident) {
-            Some(simbolo) => simbolo.tipo(),
-            None => TipoSimbolo::Vazio
-        }
     }
 }
 
 impl Visitor for Semantico {
+
+    /// verifica um no da arvore sintatica segundo seus requisitos semanticos especificos
     fn visit(&mut self, no: &NoAST) {
         match no.regra() {
             RegraAST::Programa => {
@@ -253,25 +252,23 @@ impl Visitor for Semantico {
             // cmdAtribuicao : circunflexo identificador '<-' expressao
             RegraAST::CMDAtribuicao => {
                 let filhos = no.filhos();
-
-                // constroi o nome do identificador 
-                let nome = filhos[1].idents()
-                    .iter()
-                    .map(|token| token.lexema().to_string())
-                    .collect::<Vec<String>>()
-                    .join(".");
-
+                
+                let ident = &filhos[1];
                 let expressao = &filhos[2];
+
+                let tipo_ident = ident.tipo(&self.escopos);
                 let tipo_exp = expressao.tipo(&self.escopos);
-                let tipo_ident = if self.escopos.existe(&nome) {
-                    self.escopos.verificar(&nome).unwrap().tipo()
-                } else {
-                    TipoSimbolo::Invalido
-                };
-
+                
                 if (tipo_exp == TipoSimbolo::Real || tipo_exp == TipoSimbolo::Inteiro) && (tipo_ident == TipoSimbolo::Real || tipo_ident == TipoSimbolo::Inteiro) {
-
+                    
                 } else if tipo_exp != tipo_ident && tipo_ident != TipoSimbolo::Invalido {
+                    // constroi o nome do identificador 
+                    let nome = filhos[1].idents()
+                        .iter()
+                        .map(|token| token.lexema().to_string())
+                        .collect::<Vec<String>>()
+                        .join(".");
+                    
                     let mensagem = format!("Linha {}: atribuicao nao compativel para {}\n", no.linha(), nome);
                     self.erros.push(mensagem);
                 }

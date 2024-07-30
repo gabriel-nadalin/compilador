@@ -4,6 +4,7 @@ pub mod token;
 use scanner::Scanner;
 use token::{Token, TipoToken};
 
+/// analisador lexico
 pub struct Lexico {
     scanner: Scanner,
     line: u32

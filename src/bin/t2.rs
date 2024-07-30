@@ -17,4 +17,5 @@ fn main() {
         let mensagem = ast.get_erro().unwrap();
         file_out.write_all(mensagem.as_bytes()).unwrap();
     }
+    file_out.write_all("Fim da compilacao\n".as_bytes()).unwrap();
 }

@@ -4,8 +4,8 @@ use std::io::Write;
 
 use compilador::{
     lexico::Lexico,
+    sintatico::parser::Parser,
     semantico::{visitor::Visitor, Semantico},
-    sintatico::parser::Parser
 };
 
 fn main() {

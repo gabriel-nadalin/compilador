@@ -3,6 +3,7 @@ use crate::{
     semantico::{escopos::Escopos, tabela_de_simbolos::TipoSimbolo}
 };
 
+/// regra da gramatica que cada no da arvore sintatica representa
 #[derive(Debug, Clone)]
 pub enum RegraAST {
     // programa : declaracoes 'algoritmo' corpo 'fim_algoritmo'
@@ -237,6 +238,8 @@ pub enum RegraAST {
     Erro { mensagem: String },
 }
 
+/// estrutura generica para um no da arvore sintatica\
+/// armazena a regra da gramatica que representa e um vetor com os nos filhos
 #[derive(Debug, Clone)]
 pub struct NoAST {
     regra: RegraAST,
@@ -245,6 +248,8 @@ pub struct NoAST {
 
 
 impl NoAST {
+
+    /// retorna novo no
     pub fn new(regra: RegraAST, filhos: Vec<NoAST>) -> Self {
         Self {
             regra,
@@ -252,6 +257,7 @@ impl NoAST {
         }
     }
 
+    /// retorna no folha
     pub fn new_folha(regra: RegraAST) -> Self {
         Self {
             regra,
@@ -259,6 +265,8 @@ impl NoAST {
         }
     }
 
+    /// retorna no vazio\
+    /// representa a ausencia de no filho
     pub fn vazio() -> Self {
         Self {
             regra: RegraAST::Vazio,
@@ -266,14 +274,17 @@ impl NoAST {
         }
     }
 
+    /// retorna regra
     pub fn regra(&self) -> &RegraAST {
         &self.regra
     }
 
+    /// retorna referencia para vetor de filhos
     pub fn filhos(&self) -> &Vec<NoAST> {
         &self.filhos
     }
 
+    /// verifica se `self` representa um erro sintatico
     pub fn is_erro(&self) -> bool {
         if let RegraAST::Erro { mensagem: _ } = self.regra {
             true
@@ -282,6 +293,7 @@ impl NoAST {
         }
     }
 
+    /// retorna mensagem de erro caso `self` represente um erro sintatico
     pub fn get_erro(&self) -> Option<String> {
         if let RegraAST::Erro { mensagem } = &self.regra {
             Some(mensagem.to_string())
@@ -290,6 +302,7 @@ impl NoAST {
         }
     }
 
+    /// retorna token caso `self` seja um no folha, `None` caso contrario
     pub fn token(&self) -> Option<Token> {
         match &self.regra {
             RegraAST::ValorConstante (token)
@@ -305,6 +318,7 @@ impl NoAST {
         }
     }
 
+    /// retorna linha do no recursivamente
     pub fn linha(&self) -> u32 {
         match &self.regra {
             RegraAST::ValorConstante (token)
@@ -328,6 +342,7 @@ impl NoAST {
         }
     }
     
+    /// retorna todos os identificadores presentes em filhos do no recursivamente
     pub fn idents(&self) -> Vec<Token> {
         match &self.regra {
             RegraAST::Ident (token) => vec![token.clone()],
@@ -344,6 +359,7 @@ impl NoAST {
         }
     }
 
+    /// retorna tipo do no recursivamente
     pub fn tipo(&self, escopos: &Escopos) -> TipoSimbolo {
         match &self.regra {
             RegraAST::ConstanteLogica(_token) => TipoSimbolo::Logico,
@@ -360,14 +376,18 @@ impl NoAST {
                     _ => TipoSimbolo::Vazio
                 }
             },
+
             RegraAST::ParcelaNaoUnario
             | RegraAST::ParcelaUnario2
             | RegraAST::ParcelaUnario3 => self.filhos()[0].tipo(escopos),
+
             RegraAST::FatorLogico
             | RegraAST::TipoExtendido
             | RegraAST::ParcelaUnario1
             | RegraAST::ExpRelacional2 => self.filhos()[1].tipo(escopos),
+
             RegraAST::Variavel => self.filhos()[2].tipo(escopos),
+
             RegraAST::Expressao
             | RegraAST::TermoLogico
             | RegraAST::ExpAritmetica
@@ -384,6 +404,7 @@ impl NoAST {
                     TipoSimbolo::Invalido
                 }
             }
+
             RegraAST::Expressoes
             | RegraAST::TermosLogicos
             | RegraAST::FatoresLogicos
@@ -401,6 +422,7 @@ impl NoAST {
                     TipoSimbolo::Invalido
                 }
             }
+
             RegraAST::ExpRelacional => {
                 if self.filhos.is_empty() {
                     return TipoSimbolo::Vazio;
@@ -415,6 +437,7 @@ impl NoAST {
                     TipoSimbolo::Invalido
                 }
             }
+
             RegraAST::Parcela => {
                 if self.filhos.len() == 1 {
                     self.filhos[0].tipo(escopos)
@@ -422,6 +445,7 @@ impl NoAST {
                     self.filhos[1].tipo(escopos)
                 }
             }
+
             RegraAST::Identificador => {
                 // constroi o nome do identificador 
                 let nome = self.idents()
@@ -435,6 +459,7 @@ impl NoAST {
                     TipoSimbolo::Invalido
                 }
             }
+
             RegraAST::Ident(ident) => {
                 let nome = ident.lexema();
                 if escopos.existe(&nome) {
@@ -443,6 +468,7 @@ impl NoAST {
                     TipoSimbolo::Invalido
                 }
             }
+            
             _ => TipoSimbolo::Vazio
         }
     }
