@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-/// representa o tipo de algum simbolo da linguagem LA
+/// representa o tipo de um simbolo da linguagem LA
 #[derive(Debug, Clone, PartialEq)]
 pub enum TipoSimbolo {
     Cadeia,
@@ -8,7 +8,7 @@ pub enum TipoSimbolo {
     Inteiro,
     Logico,
     Registro,
-    Endereco(Box<TipoSimbolo>),
+    Ponteiro(Box<TipoSimbolo>),
     Vazio,
     Invalido,
 }

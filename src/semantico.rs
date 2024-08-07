@@ -156,7 +156,7 @@ impl Visitor for Semantico {
             
             }
             RegraAST::Registro => {
-
+                
             }
             RegraAST::Variaveis => {
 
@@ -176,7 +176,7 @@ impl Visitor for Semantico {
                     let mensagem = format!("Linha {}: identificador {} ja declarado anteriormente\n", ident.linha(), nome);
                     self.erros.push(mensagem);
                 } else {
-                    let tipo = filhos[1].tipo(&escopos);
+                    let tipo = TipoSimbolo::Vazio;
                     escopo_atual.inserir(&nome, &tipo)
                 }
             }
@@ -195,7 +195,7 @@ impl Visitor for Semantico {
                     let mensagem = format!("Linha {}: identificador {} ja declarado anteriormente\n", ident.linha(), nome);
                     self.erros.push(mensagem);
                 } else {
-                    let tipo = filhos[1].tipo(&escopos);
+                    let tipo = filhos[2].tipo(&escopos);
                     escopo_atual.inserir(&nome, &tipo)
                 }
 
@@ -262,8 +262,13 @@ impl Visitor for Semantico {
                 if (tipo_exp == TipoSimbolo::Real || tipo_exp == TipoSimbolo::Inteiro) && (tipo_ident == TipoSimbolo::Real || tipo_ident == TipoSimbolo::Inteiro) {
                     
                 } else if tipo_exp != tipo_ident && tipo_ident != TipoSimbolo::Invalido {
+                    let mut nome = if let RegraAST::Circunflexo = filhos[0].regra() {
+                        "^".to_string()
+                    } else {
+                        "".to_string()
+                    };
                     // constroi o nome do identificador 
-                    let nome = filhos[1].idents()
+                    nome += &filhos[1].idents()
                         .iter()
                         .map(|token| token.lexema().to_string())
                         .collect::<Vec<String>>()

@@ -382,11 +382,19 @@ impl NoAST {
             | RegraAST::ParcelaUnario3 => self.filhos()[0].tipo(escopos),
 
             RegraAST::FatorLogico
-            | RegraAST::TipoExtendido
             | RegraAST::ParcelaUnario1
             | RegraAST::ExpRelacional2 => self.filhos()[1].tipo(escopos),
 
             RegraAST::Variavel => self.filhos()[2].tipo(escopos),
+
+            RegraAST::TipoExtendido => {
+                let filhos = &self.filhos;
+                if let RegraAST::Circunflexo = filhos[0].regra() {
+                    TipoSimbolo::Ponteiro(Box::new(filhos[1].tipo(escopos)))
+                } else {
+                    filhos[1].tipo(escopos)
+                }
+            }
 
             RegraAST::Expressao
             | RegraAST::TermoLogico
