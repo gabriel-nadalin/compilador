@@ -377,15 +377,18 @@ impl NoAST {
                 }
             },
 
-            RegraAST::ParcelaNaoUnario
-            | RegraAST::ParcelaUnario2
-            | RegraAST::ParcelaUnario3 => self.filhos()[0].tipo(escopos),
+            RegraAST::ParcelaNaoUnario => {
+                TipoSimbolo::Ponteiro(Box::new(self.filhos[0].tipo(escopos)))
+            }
+            
+            RegraAST::ParcelaUnario2
+            | RegraAST::ParcelaUnario3 => self.filhos[0].tipo(escopos),
 
             RegraAST::FatorLogico
             | RegraAST::ParcelaUnario1
-            | RegraAST::ExpRelacional2 => self.filhos()[1].tipo(escopos),
+            | RegraAST::ExpRelacional2 => self.filhos[1].tipo(escopos),
 
-            RegraAST::Variavel => self.filhos()[2].tipo(escopos),
+            RegraAST::Variavel => self.filhos[2].tipo(escopos),
 
             RegraAST::TipoExtendido => {
                 let filhos = &self.filhos;
