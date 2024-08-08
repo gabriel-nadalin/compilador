@@ -1,3 +1,5 @@
+use std::vec;
+
 use crate::{
     lexico::token::{TipoToken, Token},
     semantico::{escopos::Escopos, tabela_de_simbolos::TipoSimbolo}
@@ -356,6 +358,20 @@ impl NoAST {
                 }
                 idents
             }
+        }
+    }
+
+    /// retorna atributos de um registro recursivamente
+    pub fn atributos(&self) -> Vec<NoAST> {
+        match &self.regra {
+            RegraAST::Variavel => vec![self.clone()],
+            RegraAST::Variaveis => {
+                let mut vars = self.filhos[1].atributos();
+                vars.push(self.filhos[0].clone());
+                vars
+            },
+            RegraAST::Registro => self.filhos[0].atributos(),
+            _ => vec![]
         }
     }
 

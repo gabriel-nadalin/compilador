@@ -45,6 +45,8 @@ impl Visitor for Semantico {
             // declaracao_local :
             //     'declare' variavel
             RegraAST::DeclaracaoVariavel => {
+                let escopos = self.escopos.clone();
+
                 let variavel = &no.filhos()[0];
                 let idents = variavel.idents();
                 let tipo = variavel.tipo(&self.escopos.clone());
@@ -57,6 +59,18 @@ impl Visitor for Semantico {
                         self.erros.push(mensagem);
                     } else {
                         escopo_atual.inserir(&nome, &tipo);
+                        if let TipoSimbolo::Registro = variavel.tipo(&escopos) {
+                            println!("{:?}", variavel.tipo(&escopos));
+                            let atributos = variavel.filhos()[2].atributos();
+                            for atributo in atributos {
+                                let tipo = atributo.tipo(&escopos);
+                                let idents = atributo.idents();
+                                for ident in idents {
+                                    let nome = format!("{}.{}", nome, ident.lexema());
+                                    escopo_atual.inserir(&nome, &tipo)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -75,8 +89,22 @@ impl Visitor for Semantico {
                     let mensagem = format!("Linha {}: identificador {} ja declarado anteriormente\n", ident.linha(), nome);
                     self.erros.push(mensagem);
                 } else {
-                    let tipo = filhos[1].tipo(&escopos);
-                    escopo_atual.inserir(&nome, &tipo)
+                    if let RegraAST::Registro = filhos[1].regra() {
+                        println!("aqui!");
+                        let atributos = filhos[1].atributos();
+                        for atributo in atributos {
+                            let tipo = atributo.tipo(&escopos);
+                            let idents = atributo.idents();
+                            for ident in idents {
+                                let nome = format!("{}.{}", nome, ident.lexema());
+                                println!("{nome}");
+                                escopo_atual.inserir(&nome, &tipo)
+                            }
+                        }
+                    } else {
+                        let tipo = filhos[1].tipo(&escopos);
+                        escopo_atual.inserir(&nome, &tipo)
+                    }
                 }
 
             }
