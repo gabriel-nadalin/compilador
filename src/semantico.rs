@@ -67,6 +67,7 @@ impl Visitor for Semantico {
                                 let idents = atributo.idents();
                                 for ident in idents {
                                     let nome = format!("{}.{}", nome, ident.lexema());
+                                    escopo_atual.inserir(&ident.lexema(), &tipo);
                                     escopo_atual.inserir(&nome, &tipo)
                                 }
                             }
@@ -97,9 +98,9 @@ impl Visitor for Semantico {
                             let idents = atributo.idents();
                             for ident in idents {
                                 let nome = format!("{}.{}", nome, ident.lexema());
-                                println!("{nome}");
+                                println!("{}", ident.lexema());
                                 escopo_atual.inserir(&nome, &tipo)
-                            }
+                            } 
                         }
                     } else {
                         let tipo = filhos[1].tipo(&escopos);
@@ -140,11 +141,8 @@ impl Visitor for Semantico {
 
             // identificador : IDENT identificador2 dimensao
             RegraAST::Identificador => {
-                let nome = no.idents()
-                    .iter()
-                    .map(|token| token.lexema().to_string())
-                    .collect::<Vec<String>>()
-                    .join(".");
+                let filhos = no.filhos();
+                let nome = filhos[0].texto() + &filhos[1].texto();
 
                 if !self.escopos.existe(&nome) {
                     let ident = no.filhos()[0].token().unwrap();
@@ -290,17 +288,7 @@ impl Visitor for Semantico {
                 if (tipo_exp == TipoSimbolo::Real || tipo_exp == TipoSimbolo::Inteiro) && (tipo_ident == TipoSimbolo::Real || tipo_ident == TipoSimbolo::Inteiro) {
                     
                 } else if tipo_exp != tipo_ident && tipo_ident != TipoSimbolo::Invalido {
-                    let mut nome = if let RegraAST::Circunflexo = filhos[0].regra() {
-                        "^".to_string()
-                    } else {
-                        "".to_string()
-                    };
-                    // constroi o nome do identificador 
-                    nome += &filhos[1].idents()
-                        .iter()
-                        .map(|token| token.lexema().to_string())
-                        .collect::<Vec<String>>()
-                        .join(".");
+                    let nome = filhos[0].texto() + &ident.texto();
                     
                     let mensagem = format!("Linha {}: atribuicao nao compativel para {}\n", no.linha(), nome);
                     self.erros.push(mensagem);

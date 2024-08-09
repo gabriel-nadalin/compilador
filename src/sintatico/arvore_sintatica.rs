@@ -499,4 +499,28 @@ impl NoAST {
             _ => TipoSimbolo::Vazio
         }
     }
+
+    pub fn texto(&self) -> String {
+        match &self.regra {
+            RegraAST::ValorConstante (token)
+            | RegraAST::Ident (token)
+            | RegraAST::TipoBasico (token)
+            | RegraAST::Op1 (token)
+            | RegraAST::Op2 (token)
+            | RegraAST::NumInt (token)
+            | RegraAST::NumReal (token)
+            | RegraAST::Cadeia (token)
+            | RegraAST::OpRelacional (token) => token.lexema(),
+            RegraAST::Identificador2 => format!(".{}{}", self.filhos[0].texto(), self.filhos[1].texto()),
+            RegraAST::Circunflexo => "^".to_string(),
+            RegraAST::Dimensao => format!("[{}]{}", self.filhos[0].texto(), self.filhos[1].texto()),
+            _ => {
+                let mut texto = "".to_string();
+                for filho in &self.filhos {
+                    texto += &filho.texto()
+                }
+                texto
+            }
+        }
+    }
 }
