@@ -6,7 +6,7 @@ use crate::{
 };
 
 /// regra da gramatica que cada no da arvore sintatica representa
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum RegraAST {
     // programa : declaracoes 'algoritmo' corpo 'fim_algoritmo'
     Programa,
@@ -242,7 +242,7 @@ pub enum RegraAST {
 
 /// estrutura generica para um no da arvore sintatica\
 /// armazena a regra da gramatica que representa e um vetor com os nos filhos
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct NoAST {
     regra: RegraAST,
     filhos: Vec<NoAST>,
@@ -361,16 +361,30 @@ impl NoAST {
         }
     }
 
-    /// retorna atributos de um registro recursivamente
-    pub fn atributos(&self) -> Vec<NoAST> {
+    /// retorna atributos de um registro ou parametros de uma funcao ou procedimento recursivamente
+    pub fn variaveis(&self) -> Vec<NoAST> {
         match &self.regra {
             RegraAST::Variavel => vec![self.clone()],
             RegraAST::Variaveis => {
-                let mut vars = self.filhos[1].atributos();
+                let mut vars = self.filhos[1].variaveis();
                 vars.push(self.filhos[0].clone());
                 vars
             },
-            RegraAST::Registro => self.filhos[0].atributos(),
+            RegraAST::Registro => self.filhos[0].variaveis(),
+            
+            RegraAST::Parametro => vec![self.clone()],
+            RegraAST::Parametros => {
+                let mut params = self.filhos[1].variaveis();
+                params.push(self.filhos[0].clone());
+                params
+            },
+            RegraAST::Parametros2 => {
+                let mut params = self.filhos[1].variaveis();
+                params.push(self.filhos[0].clone());
+                params
+            },
+            RegraAST::DeclaracaoFuncao
+            | RegraAST::DeclaracaoProcedimento => self.filhos[1].variaveis(),
             _ => vec![]
         }
     }
@@ -382,7 +396,9 @@ impl NoAST {
             RegraAST::Cadeia(_token) => TipoSimbolo::Cadeia,
             RegraAST::NumInt(_token) => TipoSimbolo::Inteiro,
             RegraAST::NumReal(_token) => TipoSimbolo::Real,
-            RegraAST::Registro => TipoSimbolo::Registro,
+            RegraAST::Registro => TipoSimbolo::Registro(self.variaveis()),
+            RegraAST::DeclaracaoProcedimento => TipoSimbolo::Procedimento(self.variaveis()),
+            RegraAST::DeclaracaoFuncao => TipoSimbolo::Funcao(self.variaveis()),
             RegraAST::TipoBasico (token) => {
                 match token.tipo() {
                     TipoToken::PCliteral => TipoSimbolo::Cadeia,
@@ -475,11 +491,7 @@ impl NoAST {
 
             RegraAST::Identificador => {
                 // constroi o nome do identificador 
-                let nome = self.idents()
-                    .iter()
-                    .map(|token| token.lexema().to_string())
-                    .collect::<Vec<String>>()
-                    .join(".");
+                let nome = format!("{}{}", self.filhos[0].texto(), self.filhos[1].texto());
                 if escopos.existe(&nome) {
                     escopos.verificar(&nome).unwrap().tipo()
                 } else {

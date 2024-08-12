@@ -1,5 +1,7 @@
 use crate::semantico::tabela_de_simbolos::{Simbolo, TabelaDeSimbolos};
 
+use super::tabela_de_simbolos::TipoSimbolo;
+
 /// vetor de tabelas de simbolos, cada uma representando um escopo
 #[derive(Debug, Clone)]
 pub struct Escopos {
@@ -9,17 +11,17 @@ pub struct Escopos {
 impl Escopos {
 
     /// retorna instancia de escopos
-    pub fn new() -> Self {
+    pub fn new(retorno: TipoSimbolo) -> Self {
         let mut escopos = Self {
             tabelas: vec![],
         };
-        escopos.novo_escopo();
+        escopos.novo_escopo(retorno);
         escopos
     }
 
     /// adiciona escopo
-    pub fn novo_escopo(&mut self) {
-        self.tabelas.push(TabelaDeSimbolos::new())
+    pub fn novo_escopo(&mut self, retorno: TipoSimbolo) {
+        self.tabelas.push(TabelaDeSimbolos::new(retorno))
     }
 
     /// retorna escopo atual

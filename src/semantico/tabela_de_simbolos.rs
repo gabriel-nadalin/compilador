@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use crate::sintatico::arvore_sintatica::NoAST;
+
 /// representa o tipo de um simbolo da linguagem LA
 #[derive(Debug, Clone, PartialEq)]
 pub enum TipoSimbolo {
@@ -7,7 +9,9 @@ pub enum TipoSimbolo {
     Real,
     Inteiro,
     Logico,
-    Registro,
+    Registro(Vec<NoAST>),
+    Funcao(Vec<NoAST>),
+    Procedimento(Vec<NoAST>),
     Ponteiro(Box<TipoSimbolo>),
     Vazio,
     Invalido,
@@ -44,16 +48,22 @@ impl Simbolo {
 /// representa um escopo
 #[derive(Debug, Clone)]
 pub struct TabelaDeSimbolos {
+    retorno: TipoSimbolo,
     tabela: HashMap<String, Simbolo>
 }
 
 impl TabelaDeSimbolos {
 
     /// retorna nova tabela de simbolos
-    pub fn new() -> Self {
+    pub fn new(retorno: TipoSimbolo) -> Self {
         Self {
+            retorno,
             tabela: HashMap::new()
         }
+    }
+
+    pub fn tipo_retorno(&self) -> TipoSimbolo {
+        self.retorno.clone()
     }
 
     /// insere simbolo

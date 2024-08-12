@@ -10,7 +10,7 @@ pub enum TipoToken {
     EComercial, Ponto, PontoPonto, Ident, NumInt, NumReal, Cadeia, Fim, Erro, Vazio,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     tipo: TipoToken,
     lexema: String,

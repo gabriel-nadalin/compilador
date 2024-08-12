@@ -19,7 +19,7 @@ impl Semantico {
     /// retorna instancia de analisador semantico
     pub fn new() -> Self {
         Self {
-            escopos: Escopos::new(),
+            escopos: Escopos::new(TipoSimbolo::Vazio),
             erros: vec![],
         }
     }
@@ -59,12 +59,11 @@ impl Visitor for Semantico {
                         self.erros.push(mensagem);
                     } else {
                         escopo_atual.inserir(&nome, &tipo);
-                        if let TipoSimbolo::Registro = variavel.tipo(&escopos) {
-                            println!("{:?}", variavel.tipo(&escopos));
-                            let atributos = variavel.filhos()[2].atributos();
-                            for atributo in atributos {
-                                let tipo = atributo.tipo(&escopos);
-                                let idents = atributo.idents();
+                        if let TipoSimbolo::Registro(variaveis) = variavel.tipo(&escopos) {
+                            // let variaveis = variavel.filhos()[2].variaveis();
+                            for variavel in variaveis {
+                                let tipo = variavel.tipo(&escopos);
+                                let idents = variavel.idents();
                                 for ident in idents {
                                     let nome = format!("{}.{}", nome, ident.lexema());
                                     escopo_atual.inserir(&ident.lexema(), &tipo);
@@ -90,18 +89,17 @@ impl Visitor for Semantico {
                     let mensagem = format!("Linha {}: identificador {} ja declarado anteriormente\n", ident.linha(), nome);
                     self.erros.push(mensagem);
                 } else {
-                    if let RegraAST::Registro = filhos[1].regra() {
-                        println!("aqui!");
-                        let atributos = filhos[1].atributos();
-                        for atributo in atributos {
-                            let tipo = atributo.tipo(&escopos);
-                            let idents = atributo.idents();
+                    if let TipoSimbolo::Registro(variaveis) = filhos[1].tipo(&escopos) {
+                        for variavel in variaveis {
+                            let tipo = variavel.tipo(&escopos);
+                            let idents = variavel.idents();
                             for ident in idents {
                                 let nome = format!("{}.{}", nome, ident.lexema());
-                                println!("{}", ident.lexema());
+                                escopo_atual.inserir(&ident.lexema(), &tipo);
                                 escopo_atual.inserir(&nome, &tipo)
                             } 
                         }
+                        escopo_atual.inserir(&ident.lexema(), &filhos[1].tipo(&escopos))
                     } else {
                         let tipo = filhos[1].tipo(&escopos);
                         escopo_atual.inserir(&nome, &tipo)
@@ -191,19 +189,40 @@ impl Visitor for Semantico {
             //     'procedimento' IDENT '(' parametros ')' declaracoes_locais cmds 'fim_procedimento'
             RegraAST::DeclaracaoProcedimento => {
                 let filhos = no.filhos();
-                let escopos = self.escopos.clone();
+                let mut escopos = self.escopos.clone();
 
                 let ident = filhos[0].token().unwrap();
                 let nome = ident.lexema();
 
-                let escopo_atual = self.escopos.escopo_atual();
-
-                if escopo_atual.existe(&nome) {
+                
+                let escopo_externo = self.escopos.escopo_atual();
+                
+                if escopo_externo.existe(&nome) {
                     let mensagem = format!("Linha {}: identificador {} ja declarado anteriormente\n", ident.linha(), nome);
                     self.erros.push(mensagem);
                 } else {
-                    let tipo = TipoSimbolo::Vazio;
-                    escopo_atual.inserir(&nome, &tipo)
+                    let tipo_retorno = TipoSimbolo::Vazio;
+                    escopo_externo.inserir(&nome, &tipo_retorno);
+
+                    escopos.novo_escopo(tipo_retorno);
+                    
+                    if let TipoSimbolo::Procedimento(variaveis) = no.tipo(&escopos) {
+                        let mut escopos_clone = escopos.clone();
+                        let escopo_interno = escopos_clone.escopo_atual();
+                        for variavel in variaveis {
+                            let tipo = variavel.tipo(&escopos);
+                            let idents = variavel.idents();
+                            for ident in idents {
+                                escopo_interno.inserir(&ident.lexema(), &tipo);
+                                escopo_externo.inserir(&ident.lexema(), &tipo);
+                            } 
+                        }
+                        escopos.abandonar_escopo()
+                    } else {
+                        let tipo = no.tipo(&escopos);
+                        escopo_externo.inserir(&nome, &tipo)
+                    }
+
                 }
             }
 
@@ -298,7 +317,10 @@ impl Visitor for Semantico {
 
             }
             RegraAST::CMDRetorne => {
-
+                if self.escopos.escopo_atual().tipo_retorno() == TipoSimbolo::Vazio {
+                    let mensagem = format!("Linha {}: comando retorne nao permitido nesse escopo\n", no.linha());
+                    self.erros.push(mensagem)
+                }
             }
             RegraAST::Selecao => {
 
