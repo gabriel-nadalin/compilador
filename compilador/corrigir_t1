@@ -1,9 +1,9 @@
 #!/bin/bash
 
-java -jar /home/gabriel/compiladores/compiladores-corretor-automatico-1.0-SNAPSHOT-jar-with-dependencies.jar\
-    "/home/gabriel/compiladores/compilador/target/debug/t1"\
+java -jar ../corretor/corretor-automatico.jar\
+    target/debug/t1\
     gcc\
-    /home/gabriel/compiladores/temp\
-    /home/gabriel/compiladores/casos-de-teste\
-    "800268, 819498"\
+    ../corretor/output\
+    ../corretor/casos-de-teste\
+    "800268, 805757, 819498"\
     t1
