@@ -15,7 +15,7 @@
 // tipo_estendido : circunflexo tipo_basico_ident
 // circunflexo: '^' | <<vazio>>
 // valor_constante : CADEIA | NUM_INT | NUM_REAL | 'verdadeiro' | 'falso'
-// registro : 'registro' variaveis 'fim_Registro'
+// registro : 'registro' variaveis 'fim_Registro' fecha_escopo
 // variaveis : variavel variaveis | <<vazio>>
 // declaracao_global : 'procedimento' IDENT '(' parametros ')'
 //         declaracoes_locais cmds 'fim_procedimento' fecha_escopo

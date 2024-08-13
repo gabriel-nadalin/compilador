@@ -52,7 +52,7 @@ pub enum RegraAST {
     // circunflexo: '^' | <<vazio>>
     Circunflexo,
 
-    // registro : 'registro' variaveis 'fim_Registro'
+    // registro : 'registro' variaveis 'fim_Registro' fecha_escopo
     Registro,
 
     // variaveis : variavel variaveis | <<vazio>>

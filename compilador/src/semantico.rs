@@ -48,26 +48,25 @@ impl Visitor for Semantico {
                 let escopos = self.escopos.clone();
 
                 let variavel = &no.filhos()[0];
-                let idents = variavel.idents();
-                let tipo = variavel.tipo(&escopos);
+                let var_idents = variavel.idents();
+                let var_tipo = variavel.tipo(&escopos);
 
                 let escopo_atual = self.escopos.escopo_atual();
 
-                for ident in idents {
-                    let nome = ident.lexema();
+                for var_ident in var_idents {
+                    let nome = var_ident.lexema();
                     if escopo_atual.existe(&nome) {
-                        let mensagem = format!("Linha {}: identificador {} ja declarado anteriormente\n", ident.linha(), nome);
+                        let mensagem = format!("Linha {}: identificador {} ja declarado anteriormente\n", var_ident.linha(), nome);
                         self.erros.push(mensagem);
                     } else {
-                        escopo_atual.inserir(&nome, &tipo);
+                        escopo_atual.inserir(&nome, &var_tipo);
 
-                        if let TipoSimbolo::Registro(ref atributos) = tipo {
+                        if let TipoSimbolo::Registro(ref atributos) = var_tipo {
                             for atributo in atributos {
                                 let tipo = atributo.tipo(&escopos);
                                 let idents = atributo.idents();
                                 for ident in idents {
                                     let nome = format!("{}.{}", nome, ident.lexema());
-                                    escopo_atual.inserir(&ident.lexema(), &tipo);
                                     escopo_atual.inserir(&nome, &tipo)
                                 }
                             }
@@ -91,18 +90,6 @@ impl Visitor for Semantico {
                     self.erros.push(mensagem);
                 } else {
                     escopo_atual.inserir(&nome, &filhos[1].tipo(&escopos));
-
-                    if let TipoSimbolo::Registro(atributos) = filhos[1].tipo(&escopos) {
-                        for atributo in atributos {
-                            let tipo = atributo.tipo(&escopos);
-                            let idents = atributo.idents();
-                            for ident in idents {
-                                let nome = format!("{}.{}", nome, ident.lexema());
-                                escopo_atual.inserir(&ident.lexema(), &tipo);
-                                escopo_atual.inserir(&nome, &tipo)
-                            } 
-                        }
-                    }
                 }
             }
 
@@ -177,9 +164,26 @@ impl Visitor for Semantico {
             RegraAST::Circunflexo => {
             
             }
+
+            // registro : 'registro' variaveis 'fim_Registro' fecha_escopo
             RegraAST::Registro => {
-                
+                let escopos = self.escopos.clone();
+                    
+                let tipo_retorno = TipoSimbolo::Vazio;
+                self.escopos.novo_escopo(tipo_retorno);
+                let escopo_atual = self.escopos.escopo_atual();
+
+                if let TipoSimbolo::Registro(atributos) = no.tipo(&escopos) {
+                    for atributo in atributos {
+                        let tipo = atributo.tipo(&escopos);
+                        let idents = atributo.idents();
+                        for ident in idents {
+                            escopo_atual.inserir(&ident.lexema(), &tipo);
+                        } 
+                    }
+                }
             }
+
             RegraAST::Variaveis => {
 
             }

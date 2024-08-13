@@ -516,7 +516,7 @@ impl Parser {
         NoAST::new_folha(RegraAST::ValorConstante(token))
     }
 
-    /// registro : 'registro' variaveis 'fim_Registro'
+    /// registro : 'registro' variaveis 'fim_Registro' fecha_escopo
     fn registro(&mut self) -> NoAST {
         let mut filhos = vec![];
 
@@ -535,6 +535,8 @@ impl Parser {
             Ok(_) => {},
             Err(erro_sintatico) => return erro_sintatico
         }
+        
+        filhos.push(NoAST::new_folha(RegraAST::FechaEscopo));
         
         NoAST::new(RegraAST::Registro, filhos)
     }
