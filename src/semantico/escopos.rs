@@ -21,7 +21,7 @@ impl Escopos {
 
     /// adiciona escopo
     pub fn novo_escopo(&mut self, retorno: TipoSimbolo) {
-        self.tabelas.push(TabelaDeSimbolos::new(retorno))
+        self.tabelas.insert(0, TabelaDeSimbolos::new(retorno))
     }
 
     /// retorna escopo atual
@@ -36,7 +36,7 @@ impl Escopos {
 
     /// remove escopo mais recente
     pub fn abandonar_escopo(&mut self) {
-        self.tabelas.pop();
+        self.tabelas.remove(0);
     }
 
     /// retorna primeiro simbolo com identificador `nome`, caso exista em algum escopo

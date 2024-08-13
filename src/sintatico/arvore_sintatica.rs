@@ -236,6 +236,8 @@ pub enum RegraAST {
     // op_logico_2 : 'e'
     OpLogico2,
 
+    FechaEscopo,
+
     Vazio,
     Erro { mensagem: String },
 }
@@ -362,29 +364,55 @@ impl NoAST {
     }
 
     /// retorna atributos de um registro ou parametros de uma funcao ou procedimento recursivamente
-    pub fn variaveis(&self) -> Vec<NoAST> {
+    pub fn variaveis(&self, escopos: &Escopos) -> Vec<NoAST> {
         match &self.regra {
             RegraAST::Variavel => vec![self.clone()],
             RegraAST::Variaveis => {
-                let mut vars = self.filhos[1].variaveis();
+                let mut vars = self.filhos[1].variaveis(escopos);
                 vars.push(self.filhos[0].clone());
                 vars
             },
-            RegraAST::Registro => self.filhos[0].variaveis(),
+            RegraAST::Registro => self.filhos[0].variaveis(escopos),
             
             RegraAST::Parametro => vec![self.clone()],
             RegraAST::Parametros => {
-                let mut params = self.filhos[1].variaveis();
+                let mut params = self.filhos[1].variaveis(escopos);
                 params.push(self.filhos[0].clone());
                 params
             },
             RegraAST::Parametros2 => {
-                let mut params = self.filhos[1].variaveis();
+                let mut params = self.filhos[1].variaveis(escopos);
                 params.push(self.filhos[0].clone());
                 params
             },
             RegraAST::DeclaracaoFuncao
-            | RegraAST::DeclaracaoProcedimento => self.filhos[1].variaveis(),
+            | RegraAST::DeclaracaoProcedimento => self.filhos[1].variaveis(escopos),
+            
+            RegraAST::ParcelaUnario2 => {
+                let mut exps = self.filhos[2].variaveis(escopos);
+                exps.push(self.filhos[1].clone());
+                exps
+            },
+            RegraAST::Expressoes => {
+                let mut exps = self.filhos[1].variaveis(escopos);
+                exps.push(self.filhos[0].clone());
+                exps
+            }
+
+            RegraAST::Ident(ident) => {
+                let nome = ident.lexema();
+                if escopos.existe(&nome) {
+                    let tipo = escopos.verificar(&nome).unwrap().tipo();
+                    if let TipoSimbolo::Funcao { parametros, retorno: _ } = tipo {
+                        parametros
+                    } else {
+                        vec![]
+                    }
+                } else {
+                    vec![]
+                }
+            }
+
             _ => vec![]
         }
     }
@@ -396,9 +424,12 @@ impl NoAST {
             RegraAST::Cadeia(_token) => TipoSimbolo::Cadeia,
             RegraAST::NumInt(_token) => TipoSimbolo::Inteiro,
             RegraAST::NumReal(_token) => TipoSimbolo::Real,
-            RegraAST::Registro => TipoSimbolo::Registro(self.variaveis()),
-            RegraAST::DeclaracaoProcedimento => TipoSimbolo::Procedimento(self.variaveis()),
-            RegraAST::DeclaracaoFuncao => TipoSimbolo::Funcao(self.variaveis()),
+            RegraAST::Registro => TipoSimbolo::Registro(self.variaveis(escopos)),
+            RegraAST::DeclaracaoProcedimento => TipoSimbolo::Procedimento(self.variaveis(escopos)),
+            RegraAST::DeclaracaoFuncao => TipoSimbolo::Funcao {
+                parametros: self.variaveis(escopos),
+                retorno: Box::new(self.filhos[2].tipo(escopos)),
+            },
             RegraAST::TipoBasico (token) => {
                 match token.tipo() {
                     TipoToken::PCliteral => TipoSimbolo::Cadeia,
@@ -421,6 +452,8 @@ impl NoAST {
             | RegraAST::ExpRelacional2 => self.filhos[1].tipo(escopos),
 
             RegraAST::Variavel => self.filhos[2].tipo(escopos),
+
+            RegraAST::Parametro => self.filhos[3].tipo(escopos),
 
             RegraAST::TipoExtendido => {
                 let filhos = &self.filhos;

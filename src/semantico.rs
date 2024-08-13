@@ -189,7 +189,7 @@ impl Visitor for Semantico {
             //     'procedimento' IDENT '(' parametros ')' declaracoes_locais cmds 'fim_procedimento'
             RegraAST::DeclaracaoProcedimento => {
                 let filhos = no.filhos();
-                let mut escopos = self.escopos.clone();
+                let escopos = self.escopos.clone();
 
                 let ident = filhos[0].token().unwrap();
                 let nome = ident.lexema();
@@ -201,28 +201,21 @@ impl Visitor for Semantico {
                     let mensagem = format!("Linha {}: identificador {} ja declarado anteriormente\n", ident.linha(), nome);
                     self.erros.push(mensagem);
                 } else {
-                    let tipo_retorno = TipoSimbolo::Vazio;
-                    escopo_externo.inserir(&nome, &tipo_retorno);
-
-                    escopos.novo_escopo(tipo_retorno);
+                    escopo_externo.inserir(&ident.lexema(), &no.tipo(&escopos));
                     
-                    if let TipoSimbolo::Procedimento(variaveis) = no.tipo(&escopos) {
-                        let mut escopos_clone = escopos.clone();
-                        let escopo_interno = escopos_clone.escopo_atual();
-                        for variavel in variaveis {
-                            let tipo = variavel.tipo(&escopos);
-                            let idents = variavel.idents();
+                    let tipo_retorno = TipoSimbolo::Vazio;
+                    self.escopos.novo_escopo(tipo_retorno);
+                    
+                    if let TipoSimbolo::Procedimento(parametros) = no.tipo(&escopos) {
+                        let escopo_interno = self.escopos.escopo_atual();
+                        for parametro in parametros {
+                            let tipo = parametro.tipo(&escopos);
+                            let idents = parametro.idents();
                             for ident in idents {
                                 escopo_interno.inserir(&ident.lexema(), &tipo);
-                                escopo_externo.inserir(&ident.lexema(), &tipo);
                             } 
                         }
-                        escopos.abandonar_escopo()
-                    } else {
-                        let tipo = no.tipo(&escopos);
-                        escopo_externo.inserir(&nome, &tipo)
                     }
-
                 }
             }
 
@@ -234,16 +227,30 @@ impl Visitor for Semantico {
                 let ident = filhos[0].token().unwrap();
                 let nome = ident.lexema();
 
-                let escopo_atual = self.escopos.escopo_atual();
-
-                if escopo_atual.existe(&nome) {
+                
+                let escopo_externo = self.escopos.escopo_atual();
+                
+                if escopo_externo.existe(&nome) {
                     let mensagem = format!("Linha {}: identificador {} ja declarado anteriormente\n", ident.linha(), nome);
                     self.erros.push(mensagem);
                 } else {
-                    let tipo = filhos[2].tipo(&escopos);
-                    escopo_atual.inserir(&nome, &tipo)
-                }
+                    escopo_externo.inserir(&ident.lexema(), &no.tipo(&escopos));
+                    
+                    let tipo_retorno = filhos[2].tipo(&escopos);
+                    self.escopos.novo_escopo(tipo_retorno);
+                    
+                    if let TipoSimbolo::Funcao { parametros, retorno: _ } = no.tipo(&escopos) {
+                        let escopo_interno = self.escopos.escopo_atual();
+                        for parametro in parametros {
+                            let tipo = parametro.tipo(&escopos);
+                            let idents = parametro.idents();
+                            for ident in idents {
+                                escopo_interno.inserir(&ident.lexema(), &tipo);
+                            } 
+                        }
+                    }
 
+                }
             }
             RegraAST::DeclaracoesLocais => {
 
@@ -313,9 +320,11 @@ impl Visitor for Semantico {
                     self.erros.push(mensagem);
                 }
             }
+
             RegraAST::CMDChamada => {
 
             }
+
             RegraAST::CMDRetorne => {
                 if self.escopos.escopo_atual().tipo_retorno() == TipoSimbolo::Vazio {
                     let mensagem = format!("Linha {}: comando retorne nao permitido nesse escopo\n", no.linha());
@@ -376,8 +385,31 @@ impl Visitor for Semantico {
             RegraAST::ParcelaUnario1 => {
 
             }
-            RegraAST::ParcelaUnario2 => {
 
+            // tratando chamadas de funcoes
+            RegraAST::ParcelaUnario2 => {
+                let escopos = self.escopos.clone();
+                
+                let params_chamada = no.variaveis(&escopos);
+                
+                if let TipoSimbolo::Funcao{parametros: params_funcao, retorno: _} = no.tipo(&escopos) {
+                    if params_chamada.len() != params_funcao.len() {
+                        let mensagem = format!("Linha {}: incompatibilidade de parametros na chamada de {}\n",  no.linha(), no.filhos()[0].idents()[0].lexema());
+                        self.erros.push(mensagem);
+                        return
+                    }
+                    for (param_chamada, param_funcao) in params_chamada.iter().zip(params_funcao.iter()) {
+                        let tipo_chamada = if let TipoSimbolo::Funcao{parametros: _, retorno} = param_chamada.tipo(&escopos) {
+                            *retorno
+                        } else { param_chamada.tipo(&escopos) };
+                        
+                        if tipo_chamada != param_funcao.tipo(&escopos) {
+                            let mensagem = format!("Linha {}: incompatibilidade de parametros na chamada de {}\n",  no.linha(), no.filhos()[0].idents()[0].lexema());
+                            self.erros.push(mensagem);
+                            return
+                        }
+                    }
+                }
             }
             RegraAST::ParcelaUnario3 => {
 
@@ -432,6 +464,9 @@ impl Visitor for Semantico {
             }
             RegraAST::OpLogico2 => {
             
+            }
+            RegraAST::FechaEscopo => {
+                self.escopos.abandonar_escopo()
             }
             RegraAST::Vazio => {
             

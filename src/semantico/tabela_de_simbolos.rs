@@ -10,7 +10,10 @@ pub enum TipoSimbolo {
     Inteiro,
     Logico,
     Registro(Vec<NoAST>),
-    Funcao(Vec<NoAST>),
+    Funcao {
+        parametros: Vec<NoAST>,
+        retorno: Box<TipoSimbolo>,
+    },
     Procedimento(Vec<NoAST>),
     Ponteiro(Box<TipoSimbolo>),
     Vazio,

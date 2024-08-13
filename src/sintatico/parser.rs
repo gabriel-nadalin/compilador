@@ -613,6 +613,8 @@ impl Parser {
                     Ok(_) => {},
                     Err(erro_sintatico) => return erro_sintatico
                 }
+
+                filhos.push(NoAST::new_folha(RegraAST::FechaEscopo));
                 
                 NoAST::new(RegraAST::DeclaracaoProcedimento, filhos)
             }
@@ -672,6 +674,8 @@ impl Parser {
                     Err(erro_sintatico) => return erro_sintatico
                 }
                 
+                filhos.push(NoAST::new_folha(RegraAST::FechaEscopo));
+
                 NoAST::new(RegraAST::DeclaracaoFuncao, filhos)
             }
             _ => self.erro_sintatico()
