@@ -49,9 +49,10 @@ impl Visitor for Semantico {
 
                 let variavel = &no.filhos()[0];
                 let idents = variavel.idents();
-                let tipo = variavel.tipo(&self.escopos.clone());
+                let tipo = variavel.tipo(&escopos);
 
                 let escopo_atual = self.escopos.escopo_atual();
+
                 for ident in idents {
                     let nome = ident.lexema();
                     if escopo_atual.existe(&nome) {
@@ -59,11 +60,11 @@ impl Visitor for Semantico {
                         self.erros.push(mensagem);
                     } else {
                         escopo_atual.inserir(&nome, &tipo);
-                        if let TipoSimbolo::Registro(variaveis) = variavel.tipo(&escopos) {
-                            // let variaveis = variavel.filhos()[2].variaveis();
-                            for variavel in variaveis {
-                                let tipo = variavel.tipo(&escopos);
-                                let idents = variavel.idents();
+
+                        if let TipoSimbolo::Registro(ref atributos) = tipo {
+                            for atributo in atributos {
+                                let tipo = atributo.tipo(&escopos);
+                                let idents = atributo.idents();
                                 for ident in idents {
                                     let nome = format!("{}.{}", nome, ident.lexema());
                                     escopo_atual.inserir(&ident.lexema(), &tipo);
@@ -89,23 +90,20 @@ impl Visitor for Semantico {
                     let mensagem = format!("Linha {}: identificador {} ja declarado anteriormente\n", ident.linha(), nome);
                     self.erros.push(mensagem);
                 } else {
-                    if let TipoSimbolo::Registro(variaveis) = filhos[1].tipo(&escopos) {
-                        for variavel in variaveis {
-                            let tipo = variavel.tipo(&escopos);
-                            let idents = variavel.idents();
+                    escopo_atual.inserir(&nome, &filhos[1].tipo(&escopos));
+
+                    if let TipoSimbolo::Registro(atributos) = filhos[1].tipo(&escopos) {
+                        for atributo in atributos {
+                            let tipo = atributo.tipo(&escopos);
+                            let idents = atributo.idents();
                             for ident in idents {
                                 let nome = format!("{}.{}", nome, ident.lexema());
                                 escopo_atual.inserir(&ident.lexema(), &tipo);
                                 escopo_atual.inserir(&nome, &tipo)
                             } 
                         }
-                        escopo_atual.inserir(&ident.lexema(), &filhos[1].tipo(&escopos))
-                    } else {
-                        let tipo = filhos[1].tipo(&escopos);
-                        escopo_atual.inserir(&nome, &tipo)
                     }
                 }
-
             }
 
             //     | 'constante' IDENT ':' tipo_basico '=' valor_constante
@@ -186,7 +184,8 @@ impl Visitor for Semantico {
 
             }
 
-            //     'procedimento' IDENT '(' parametros ')' declaracoes_locais cmds 'fim_procedimento'
+            // declaracao_global :
+            //     'procedimento' IDENT '(' parametros ')' declaracoes_locais cmds 'fim_procedimento' fecha_escopo
             RegraAST::DeclaracaoProcedimento => {
                 let filhos = no.filhos();
                 let escopos = self.escopos.clone();
@@ -210,16 +209,26 @@ impl Visitor for Semantico {
                         let escopo_interno = self.escopos.escopo_atual();
                         for parametro in parametros {
                             let tipo = parametro.tipo(&escopos);
-                            let idents = parametro.idents();
-                            for ident in idents {
-                                escopo_interno.inserir(&ident.lexema(), &tipo);
+                            let param_idents = parametro.idents();
+                            for param_ident in param_idents {
+                                if let TipoSimbolo::Registro(ref atributos) = tipo {
+                                    for atributo in atributos {
+                                        let tipo = atributo.tipo(&escopos);
+                                        let atr_idents = atributo.idents();
+                                        for atr_ident in atr_idents {
+                                            let nome = format!("{}.{}", param_ident.lexema(), atr_ident.lexema());
+                                            escopo_interno.inserir(&nome, &tipo)
+                                        }
+                                    }
+                                }
+                                escopo_interno.inserir(&param_ident.lexema(), &tipo);
                             } 
                         }
                     }
                 }
             }
 
-            //     | 'funcao' IDENT '(' parametros ')' ':' tipo_estendido declaracoes_locais cmds 'fim_funcao'
+            //     | 'funcao' IDENT '(' parametros ')' ':' tipo_estendido declaracoes_locais cmds 'fim_funcao' fecha_escopo
             RegraAST::DeclaracaoFuncao => {
                 let filhos = no.filhos();
                 let escopos = self.escopos.clone();
@@ -243,13 +252,22 @@ impl Visitor for Semantico {
                         let escopo_interno = self.escopos.escopo_atual();
                         for parametro in parametros {
                             let tipo = parametro.tipo(&escopos);
-                            let idents = parametro.idents();
-                            for ident in idents {
-                                escopo_interno.inserir(&ident.lexema(), &tipo);
+                            let param_idents = parametro.idents();
+                            for param_ident in param_idents {
+                                if let TipoSimbolo::Registro(ref atributos) = tipo {
+                                    for atributo in atributos {
+                                        let tipo = atributo.tipo(&escopos);
+                                        let atr_idents = atributo.idents();
+                                        for atr_ident in atr_idents {
+                                            let nome = format!("{}.{}", param_ident.lexema(), atr_ident.lexema());
+                                            escopo_interno.inserir(&nome, &tipo)
+                                        }
+                                    }
+                                }
+                                escopo_interno.inserir(&param_ident.lexema(), &tipo);
                             } 
                         }
                     }
-
                 }
             }
             RegraAST::DeclaracoesLocais => {
@@ -325,6 +343,7 @@ impl Visitor for Semantico {
 
             }
 
+            // cmdRetorne : 'retorne' expressao
             RegraAST::CMDRetorne => {
                 if self.escopos.escopo_atual().tipo_retorno() == TipoSimbolo::Vazio {
                     let mensagem = format!("Linha {}: comando retorne nao permitido nesse escopo\n", no.linha());
@@ -387,19 +406,20 @@ impl Visitor for Semantico {
             }
 
             // tratando chamadas de funcoes
+            //     | IDENT '(' expressao expressoes ')'
             RegraAST::ParcelaUnario2 => {
                 let escopos = self.escopos.clone();
                 
                 let params_chamada = no.variaveis(&escopos);
                 
-                if let TipoSimbolo::Funcao{parametros: params_funcao, retorno: _} = no.tipo(&escopos) {
+                if let TipoSimbolo::Funcao { parametros: params_funcao, retorno: _ } = no.tipo(&escopos) {
                     if params_chamada.len() != params_funcao.len() {
                         let mensagem = format!("Linha {}: incompatibilidade de parametros na chamada de {}\n",  no.linha(), no.filhos()[0].idents()[0].lexema());
                         self.erros.push(mensagem);
                         return
                     }
                     for (param_chamada, param_funcao) in params_chamada.iter().zip(params_funcao.iter()) {
-                        let tipo_chamada = if let TipoSimbolo::Funcao{parametros: _, retorno} = param_chamada.tipo(&escopos) {
+                        let tipo_chamada = if let TipoSimbolo::Funcao { parametros: _, retorno } = param_chamada.tipo(&escopos) {
                             *retorno
                         } else { param_chamada.tipo(&escopos) };
                         
@@ -465,9 +485,11 @@ impl Visitor for Semantico {
             RegraAST::OpLogico2 => {
             
             }
+
             RegraAST::FechaEscopo => {
                 self.escopos.abandonar_escopo()
             }
+
             RegraAST::Vazio => {
             
             }

@@ -18,9 +18,10 @@
 // registro : 'registro' variaveis 'fim_Registro'
 // variaveis : variavel variaveis | <<vazio>>
 // declaracao_global : 'procedimento' IDENT '(' parametros ')'
-//         declaracoes_locais cmds 'fim_procedimento'
+//         declaracoes_locais cmds 'fim_procedimento' fecha_escopo
 //     | 'funcao' IDENT '(' parametros ')' ':' tipo_estendido
-//         declaracoes_locais cmds 'fim_funcao'
+//         declaracoes_locais cmds 'fim_funcao' fecha_escopo
+// fecha_escopo : <<vazio>>
 // declaracoes_locais : declaracao_local declaracoes_locais | <<vazio>>
 // parametro : var identificador identificadores ':' tipo_estendido
 // parametros : parametro parametros2 | <<vazio>>

@@ -58,10 +58,9 @@ pub enum RegraAST {
     // variaveis : variavel variaveis | <<vazio>>
     Variaveis,
 
-    // declaracao_global :
     DeclaracaoProcedimento,
 
-    //     | 'funcao' IDENT '(' parametros ')' ':' tipo_estendido declaracoes_locais cmds 'fim_funcao'
+    //     | 'funcao' IDENT '(' parametros ')' ':' tipo_estendido declaracoes_locais cmds 'fim_funcao' fecha_escopo
     DeclaracaoFuncao,
 
     // declaracoes_locais : declaracao_local declaracoes_locais | <<vazio>>
@@ -120,7 +119,6 @@ pub enum RegraAST {
     // cmdChamada : IDENT '(' expressao expressoes ')'
     CMDChamada,
 
-    // cmdRetorne : 'retorne' expressao
     CMDRetorne,
 
     // selecao : item_selecao selecao | <<vazio>>
@@ -177,7 +175,6 @@ pub enum RegraAST {
     // parcela_unario : circunflexo identificador
     ParcelaUnario1,
 
-    //     | IDENT '(' expressao expressoes ')'
     ParcelaUnario2,
 
     //     | '(' expressao ')'
@@ -472,8 +469,15 @@ impl NoAST {
                 if self.filhos.is_empty() {
                     return TipoSimbolo::Vazio;
                 }
-                let tipo1 = self.filhos[0].tipo(escopos);
-                let tipo2 = self.filhos[1].tipo(escopos);
+
+                let tipo1 = if let TipoSimbolo::Funcao { parametros: _, retorno } = self.filhos[0].tipo(escopos) {
+                    *retorno
+                } else { self.filhos[0].tipo(escopos) };
+
+                let tipo2 = if let TipoSimbolo::Funcao { parametros: _, retorno} = self.filhos[1].tipo(escopos) {
+                    *retorno
+                } else { self.filhos[1].tipo(escopos) };
+
                 if tipo1 == tipo2 || ((tipo1 == TipoSimbolo::Real || tipo1 == TipoSimbolo::Inteiro) && (tipo2 == TipoSimbolo::Real || tipo2 == TipoSimbolo::Inteiro)) || tipo2 == TipoSimbolo::Vazio {
                     tipo1
                 } else {
@@ -490,8 +494,15 @@ impl NoAST {
                 if self.filhos.is_empty() {
                     return TipoSimbolo::Vazio;
                 }
-                let tipo1 = self.filhos[1].tipo(escopos);
-                let tipo2 = self.filhos[2].tipo(escopos);
+
+                let tipo1 = if let TipoSimbolo::Funcao { parametros: _, retorno } = self.filhos[1].tipo(escopos) {
+                    *retorno
+                } else { self.filhos[1].tipo(escopos) };
+
+                let tipo2 = if let TipoSimbolo::Funcao { parametros: _, retorno } = self.filhos[2].tipo(escopos) {
+                    *retorno
+                } else { self.filhos[2].tipo(escopos) };
+                
                 if tipo1 == tipo2 || ((tipo1 == TipoSimbolo::Real || tipo1 == TipoSimbolo::Inteiro) && (tipo2 == TipoSimbolo::Real || tipo2 == TipoSimbolo::Inteiro)) || tipo2 == TipoSimbolo::Vazio {
                     tipo1
                 } else {
@@ -503,8 +514,15 @@ impl NoAST {
                 if self.filhos.is_empty() {
                     return TipoSimbolo::Vazio;
                 }
-                let tipo1 = self.filhos[0].tipo(escopos);
-                let tipo2 = self.filhos[1].tipo(escopos);
+
+                let tipo1 = if let TipoSimbolo::Funcao { parametros: _, retorno } = self.filhos[0].tipo(escopos) {
+                    *retorno
+                } else { self.filhos[0].tipo(escopos) };
+
+                let tipo2 = if let TipoSimbolo::Funcao { parametros: _, retorno } = self.filhos[1].tipo(escopos) {
+                    *retorno
+                } else { self.filhos[1].tipo(escopos) };
+                
                 if tipo2 == TipoSimbolo::Vazio {
                     tipo1
                 } else if tipo1 == tipo2 || ((tipo1 == TipoSimbolo::Real || tipo1 == TipoSimbolo::Inteiro) && (tipo2 == TipoSimbolo::Real || tipo2 == TipoSimbolo::Inteiro)) || tipo2 == TipoSimbolo::Vazio {

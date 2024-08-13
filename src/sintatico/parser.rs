@@ -563,8 +563,8 @@ impl Parser {
         }
     }
     
-    /// declaracao_global : 'procedimento' IDENT '(' parametros ')' declaracoes_locais cmds 'fim_procedimento'
-    ///     | 'funcao' IDENT '(' parametros ')' ':' tipo_estendido declaracoes_locais cmds 'fim_funcao'
+    /// declaracao_global : 'procedimento' IDENT '(' parametros ')' declaracoes_locais cmds 'fim_procedimento' fecha_escopo
+    ///     | 'funcao' IDENT '(' parametros ')' ':' tipo_estendido declaracoes_locais cmds 'fim_funcao' fecha_escopo
     fn declaracao_global(&mut self) -> NoAST {
         let mut filhos = vec![];
 
