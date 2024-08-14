@@ -8,6 +8,7 @@ use crate::{
 /// regra da gramatica que cada no da arvore sintatica representa
 #[derive(Debug, Clone, PartialEq)]
 pub enum RegraAST {
+
     // programa : declaracoes 'algoritmo' corpo 'fim_algoritmo'
     Programa,
     
@@ -15,11 +16,14 @@ pub enum RegraAST {
     Declaracoes,
     // declaracao : declaracao_local | declaracao_global
     
-    
+    // declaracao_local :
+    //     'declare' variavel
     DeclaracaoVariavel,
     
+    //     | 'tipo' IDENT ':' tipo
     DeclaracaoTipo,
     
+    //     | 'constante' IDENT ':' tipo_basico '=' valor_constante
     DeclaracaoConstante,
     
     // valor_constante : CADEIA | NUM_INT | NUM_REAL | 'verdadeiro' | 'falso'
@@ -29,6 +33,7 @@ pub enum RegraAST {
     Variavel,
     // tipo : registro | tipo_estendido
     
+    // identificador : IDENT identificador2 dimensao
     Identificador,
 
     // identificador2 : '.' IDENT identificador2 | <<vazio>>
@@ -58,6 +63,8 @@ pub enum RegraAST {
     // variaveis : variavel variaveis | <<vazio>>
     Variaveis,
 
+    // declaracao_global :
+    //     'procedimento' IDENT '(' parametros ')' declaracoes_locais cmds 'fim_procedimento' fecha_escopo
     DeclaracaoProcedimento,
 
     //     | 'funcao' IDENT '(' parametros ')' ':' tipo_estendido declaracoes_locais cmds 'fim_funcao' fecha_escopo
@@ -119,6 +126,7 @@ pub enum RegraAST {
     // cmdChamada : IDENT '(' expressao expressoes ')'
     CMDChamada,
 
+    // cmdRetorne : 'retorne' expressao
     CMDRetorne,
 
     // selecao : item_selecao selecao | <<vazio>>
@@ -175,6 +183,7 @@ pub enum RegraAST {
     // parcela_unario : circunflexo identificador
     ParcelaUnario1,
 
+    //     | IDENT '(' expressao expressoes ')'
     ParcelaUnario2,
 
     //     | '(' expressao ')'
@@ -233,6 +242,7 @@ pub enum RegraAST {
     // op_logico_2 : 'e'
     OpLogico2,
 
+    // fecha_escopo : <<vazio>>
     FechaEscopo,
 
     Vazio,
@@ -400,10 +410,11 @@ impl NoAST {
                 let nome = ident.lexema();
                 if escopos.existe(&nome) {
                     let tipo = escopos.verificar(&nome).unwrap().tipo();
-                    if let TipoSimbolo::Funcao { parametros, retorno: _ } = tipo {
-                        parametros
-                    } else {
-                        vec![]
+                    match tipo {
+                        TipoSimbolo::Funcao { parametros, retorno: _ } => parametros,
+                        TipoSimbolo::Procedimento(parametros) => parametros,
+                        TipoSimbolo::Registro(atributos) => atributos,
+                        _ => vec![]
                     }
                 } else {
                     vec![]
@@ -541,7 +552,6 @@ impl NoAST {
             }
 
             RegraAST::Identificador => {
-                // constroi o nome do identificador 
                 let nome = format!("{}{}", self.filhos[0].texto(), self.filhos[1].texto());
                 if escopos.existe(&nome) {
                     escopos.verificar(&nome).unwrap().tipo()
@@ -563,6 +573,7 @@ impl NoAST {
         }
     }
 
+    /// retorna texto do no recursivamente
     pub fn texto(&self) -> String {
         match &self.regra {
             RegraAST::ValorConstante (token)

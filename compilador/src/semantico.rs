@@ -35,12 +35,6 @@ impl Visitor for Semantico {
     /// verifica um no da arvore sintatica segundo seus requisitos semanticos especificos
     fn visit(&mut self, no: &NoAST) {
         match no.regra() {
-            RegraAST::Programa => {
-
-            }
-            RegraAST::Declaracoes => {
-
-            }
 
             // declaracao_local :
             //     'declare' variavel
@@ -115,13 +109,6 @@ impl Visitor for Semantico {
                 }
             }
 
-            RegraAST::ValorConstante(_) => {
-            
-            }
-            RegraAST::Variavel => {
-
-            }
-
             // identificador : IDENT identificador2 dimensao
             RegraAST::Identificador => {
                 let filhos = no.filhos();
@@ -132,15 +119,6 @@ impl Visitor for Semantico {
                     let mensagem = format!("Linha {}: identificador {} nao declarado\n", ident.linha(), nome);
                     self.erros.push(mensagem);
                 }
-            }
-            RegraAST::Identificador2 => {
-
-            }
-            RegraAST::Identificadores => {
-
-            }
-            RegraAST::Dimensao => {
-
             }
 
             // tipo_estendido : circunflexo tipo_basico_ident
@@ -154,15 +132,6 @@ impl Visitor for Semantico {
                     }
                 }
 
-            }
-            RegraAST::Ident(_) => {
-            
-            }
-            RegraAST::TipoBasico(_) => {
-            
-            }
-            RegraAST::Circunflexo => {
-            
             }
 
             // registro : 'registro' variaveis 'fim_Registro' fecha_escopo
@@ -182,10 +151,6 @@ impl Visitor for Semantico {
                         } 
                     }
                 }
-            }
-
-            RegraAST::Variaveis => {
-
             }
 
             // declaracao_global :
@@ -274,55 +239,7 @@ impl Visitor for Semantico {
                     }
                 }
             }
-            RegraAST::DeclaracoesLocais => {
-
-            }
-            RegraAST::Parametro => {
-
-            }
-            RegraAST::Parametros => {
-
-            }
-            RegraAST::Parametros2 => {
-
-            }
-            RegraAST::Var => {
             
-            }
-            RegraAST::Corpo => {
-
-            }
-            RegraAST::CMDs => {
-
-            }
-            RegraAST::CMDLeia => {
-
-            }
-            RegraAST::CMDLeia2 => {
-
-            }
-            RegraAST::CMDEscreva => {
-
-            }
-            RegraAST::CMDSe => {
-
-            }
-            RegraAST::Senao => {
-
-            }
-            RegraAST::CMDCaso => {
-
-            }
-            RegraAST::CMDPara => {
-
-            }
-            RegraAST::CMDEnquanto => {
-
-            }
-            RegraAST::CMDFaca => {
-
-            }
-
             // cmdAtribuicao : circunflexo identificador '<-' expressao
             RegraAST::CMDAtribuicao => {
                 let filhos = no.filhos();
@@ -343,10 +260,6 @@ impl Visitor for Semantico {
                 }
             }
 
-            RegraAST::CMDChamada => {
-
-            }
-
             // cmdRetorne : 'retorne' expressao
             RegraAST::CMDRetorne => {
                 if self.escopos.escopo_atual().tipo_retorno() == TipoSimbolo::Vazio {
@@ -354,61 +267,7 @@ impl Visitor for Semantico {
                     self.erros.push(mensagem)
                 }
             }
-            RegraAST::Selecao => {
-
-            }
-            RegraAST::ItemSelecao => {
-
-            }
-            RegraAST::Constantes => {
-
-            }
-            RegraAST::NumeroIntervalo => {
-
-            }
-            RegraAST::NumeroIntervalos => {
-
-            }
-            RegraAST::NumeroIntervalo2 => {
-
-            }
-            RegraAST::OpUnario => {
             
-            }
-            RegraAST::ExpAritmetica => {
-
-            }
-            RegraAST::Termo => {
-
-            }
-            RegraAST::Termos => {
-
-            }
-            RegraAST::Op1(_) => {
-            
-            }
-            RegraAST::Fator => {
-
-            }
-            RegraAST::Fatores => {
-
-            }
-            RegraAST::Op2(_) => {
-            
-            }
-            RegraAST::Parcela => {
-
-            }
-            RegraAST::Parcelas => {
-
-            }
-            RegraAST::Op3 => {
-            
-            }
-            RegraAST::ParcelaUnario1 => {
-
-            }
-
             // tratando chamadas de funcoes
             //     | IDENT '(' expressao expressoes ')'
             RegraAST::ParcelaUnario2 => {
@@ -435,71 +294,12 @@ impl Visitor for Semantico {
                     }
                 }
             }
-            RegraAST::ParcelaUnario3 => {
-
-            }
-            RegraAST::NumInt(_) => {
             
-            }
-            RegraAST::NumReal(_) => {
-            
-            }
-            RegraAST::ParcelaNaoUnario => {
-
-            }
-            RegraAST::Cadeia(_) => {
-            
-            }
-            RegraAST::ExpRelacional => {
-
-            }
-            RegraAST::ExpRelacional2 => {
-
-            }
-            RegraAST::OpRelacional(_) => {
-            
-            }
-            RegraAST::Expressao => {
-
-            }
-            RegraAST::Expressoes => {
-
-            }
-            RegraAST::TermoLogico => {
-
-            }
-            RegraAST::TermosLogicos => {
-
-            }
-            RegraAST::FatorLogico => {
-
-            }
-            RegraAST::FatoresLogicos => {
-
-            }
-            RegraAST::Nao => {
-            
-            }
-            RegraAST::ConstanteLogica(_) => {
-            
-            }
-            RegraAST::OpLogico1 => {
-            
-            }
-            RegraAST::OpLogico2 => {
-            
-            }
-
             RegraAST::FechaEscopo => {
                 self.escopos.abandonar_escopo()
             }
 
-            RegraAST::Vazio => {
-            
-            }
-            RegraAST::Erro{mensagem: _} => {
-            
-            }
+            _ => {}
         }
     }
 }
