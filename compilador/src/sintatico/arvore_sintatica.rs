@@ -586,6 +586,8 @@ impl NoAST {
             | RegraAST::Cadeia (token)
             | RegraAST::OpRelacional (token) => token.lexema(),
             RegraAST::Identificador2 => format!(".{}{}", self.filhos[0].texto(), self.filhos[1].texto()),
+            RegraAST::Identificadores
+            | RegraAST::Expressoes => format!(", {}{}", self.filhos[0].texto(), self.filhos[1].texto()),
             RegraAST::Circunflexo => "^".to_string(),
             RegraAST::Dimensao => format!("[{}]{}", self.filhos[0].texto(), self.filhos[1].texto()),
             _ => {

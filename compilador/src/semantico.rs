@@ -34,13 +34,14 @@ impl Visitor for Semantico {
 
     /// verifica um no da arvore sintatica segundo seus requisitos semanticos especificos
     fn visit(&mut self, no: &NoAST) {
+        let filhos = no.filhos();
+        let escopos = self.escopos.clone();
+
         match no.regra() {
 
             // declaracao_local :
             //     'declare' variavel
             RegraAST::DeclaracaoVariavel => {
-                let escopos = self.escopos.clone();
-
                 let variavel = &no.filhos()[0];
                 let var_idents = variavel.idents();
                 let var_tipo = variavel.tipo(&escopos);
@@ -71,9 +72,6 @@ impl Visitor for Semantico {
 
             //     | 'tipo' IDENT ':' tipo
             RegraAST::DeclaracaoTipo => {
-                let filhos = no.filhos();
-                let escopos = self.escopos.clone();
-
                 let ident = filhos[0].token().unwrap();
                 let nome = ident.lexema();
 
@@ -89,9 +87,6 @@ impl Visitor for Semantico {
 
             //     | 'constante' IDENT ':' tipo_basico '=' valor_constante
             RegraAST::DeclaracaoConstante => {
-                let filhos = no.filhos();
-                let escopos = self.escopos.clone();
-
                 let ident = filhos[0].token().unwrap();
                 let nome = ident.lexema();
 
@@ -111,7 +106,6 @@ impl Visitor for Semantico {
 
             // identificador : IDENT identificador2 dimensao
             RegraAST::Identificador => {
-                let filhos = no.filhos();
                 let nome = filhos[0].texto() + &filhos[1].texto();
 
                 if !self.escopos.existe(&nome) {
@@ -123,7 +117,6 @@ impl Visitor for Semantico {
 
             // tipo_estendido : circunflexo tipo_basico_ident
             RegraAST::TipoExtendido => {
-                let filhos = no.filhos();
                 if let RegraAST::Ident(ident) = filhos[1].regra() {
                     let nome = ident.lexema();
                     if !self.escopos.existe(&nome) {
@@ -136,8 +129,6 @@ impl Visitor for Semantico {
 
             // registro : 'registro' variaveis 'fim_Registro' fecha_escopo
             RegraAST::Registro => {
-                let escopos = self.escopos.clone();
-                    
                 let tipo_retorno = TipoSimbolo::Vazio;
                 self.escopos.novo_escopo(tipo_retorno);
                 let escopo_atual = self.escopos.escopo_atual();
@@ -156,12 +147,8 @@ impl Visitor for Semantico {
             // declaracao_global :
             //     'procedimento' IDENT '(' parametros ')' declaracoes_locais cmds 'fim_procedimento' fecha_escopo
             RegraAST::DeclaracaoProcedimento => {
-                let filhos = no.filhos();
-                let escopos = self.escopos.clone();
-
                 let ident = filhos[0].token().unwrap();
                 let nome = ident.lexema();
-
                 
                 let escopo_externo = self.escopos.escopo_atual();
                 
@@ -199,13 +186,9 @@ impl Visitor for Semantico {
 
             //     | 'funcao' IDENT '(' parametros ')' ':' tipo_estendido declaracoes_locais cmds 'fim_funcao' fecha_escopo
             RegraAST::DeclaracaoFuncao => {
-                let filhos = no.filhos();
-                let escopos = self.escopos.clone();
-
                 let ident = filhos[0].token().unwrap();
                 let nome = ident.lexema();
 
-                
                 let escopo_externo = self.escopos.escopo_atual();
                 
                 if escopo_externo.existe(&nome) {
@@ -242,8 +225,6 @@ impl Visitor for Semantico {
             
             // cmdAtribuicao : circunflexo identificador '<-' expressao
             RegraAST::CMDAtribuicao => {
-                let filhos = no.filhos();
-                
                 let ident = &filhos[1];
                 let expressao = &filhos[2];
 
@@ -271,8 +252,6 @@ impl Visitor for Semantico {
             // tratando chamadas de funcoes
             //     | IDENT '(' expressao expressoes ')'
             RegraAST::ParcelaUnario2 => {
-                let escopos = self.escopos.clone();
-                
                 let params_chamada = no.variaveis(&escopos);
                 
                 if let TipoSimbolo::Funcao { parametros: params_funcao, retorno: _ } = no.tipo(&escopos) {

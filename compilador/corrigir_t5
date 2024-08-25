@@ -1,0 +1,9 @@
+#!/bin/bash
+
+java -jar ../corretor/corretor-automatico.jar\
+    target/debug/t5\
+    gcc\
+    ../corretor/output\
+    ../corretor/casos-de-teste\
+    "800268, 805757, 819498"\
+    t5
