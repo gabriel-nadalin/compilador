@@ -14,10 +14,6 @@ fn main() {
     let lex = Lexico::new(&args[1]);
     let mut parser = Parser::new(lex);
     let ast = parser.programa();
-    if ast.is_erro() {
-        let mensagem = ast.get_erro().unwrap();
-        file_out.write_all(mensagem.as_bytes()).unwrap();
-    }
     let mut semantico = Semantico::new();
     semantico.traverse(&ast);
     for erro in semantico.get_erros() {

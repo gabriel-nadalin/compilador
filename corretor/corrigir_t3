@@ -5,5 +5,5 @@ java -jar /home/corretor/corretor-automatico.jar \
     /home/corretor/output \
     /home/corretor/casos-de-teste \
     "800268, 819498, 805757" \
-    t3
+    "t2 t3"
     

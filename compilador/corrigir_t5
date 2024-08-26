@@ -6,4 +6,4 @@ java -jar ../corretor/corretor-automatico.jar\
     ../corretor/output\
     ../corretor/casos-de-teste\
     "800268, 805757, 819498"\
-    t5
+    "t2 t3 t4 t5"

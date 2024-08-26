@@ -19,6 +19,9 @@ Primeira parte do analisador semântico para a linguagem LA. Utiliza a árvore s
 ## T4
 Segunda parte do analizador semântico para a linguagem LA. Usa da base do T3 e implementa novas detecções de erro semântico, como detecção de escopo para ponteiros, registros e funções, incompatibilidade para ponteiros, reais, inteiros, literais, logicos e registros.
 
+## T5
+Gerador de código em linguagem C. Realiza todas as análises e, no caso de ausência de erros léxicos, sintáticos ou semânticos, traduz o código fonte escrito na linguagem LA para código equivalente em C.
+
 ## Como executar
 ### Usando o docker
 1. Garanta que você tenha o docker instalado e seu usuário faça parte do grupo docker (para não precisar rodar com `sudo`)

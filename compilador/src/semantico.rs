@@ -228,7 +228,14 @@ impl Visitor for Semantico {
                 let ident = &filhos[1];
                 let expressao = &filhos[2];
 
-                let tipo_ident = ident.tipo(&self.escopos);
+                let mut tipo_ident = ident.tipo(&self.escopos);
+                if let RegraAST::Circunflexo = filhos[0].regra() {
+                    tipo_ident = if let TipoSimbolo::Ponteiro(tipo) = tipo_ident {
+                        *tipo
+                    } else {
+                        TipoSimbolo::Invalido
+                    }
+                }
                 let tipo_exp = expressao.tipo(&self.escopos);
                 
                 if (tipo_exp == TipoSimbolo::Real || tipo_exp == TipoSimbolo::Inteiro) && (tipo_ident == TipoSimbolo::Real || tipo_ident == TipoSimbolo::Inteiro) {
@@ -276,6 +283,10 @@ impl Visitor for Semantico {
             
             RegraAST::FechaEscopo => {
                 self.escopos.abandonar_escopo()
+            }
+
+            RegraAST::Erro { mensagem } => {
+                self.erros.push(mensagem.to_string());
             }
 
             _ => {}
