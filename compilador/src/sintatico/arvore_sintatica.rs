@@ -425,6 +425,26 @@ impl NoAST {
         }
     }
 
+    pub fn intervalo(&self) -> (i32, i32) {
+        match &self.regra {
+            RegraAST::NumeroIntervalo => {
+                let mut num1: i32 = self.filhos[1].texto().parse().unwrap();
+                if *self.filhos[0].regra() == RegraAST::OpUnario {
+                    num1 = -num1;
+                }
+                let num2 = if self.filhos[2].regra != RegraAST::Vazio {
+                    let mut aux: i32 = self.filhos[2].filhos[1].texto().parse().unwrap();
+                    if *self.filhos[2].filhos[0].regra() == RegraAST::OpUnario {
+                        aux = -aux;
+                    }
+                    aux
+                } else { num1 };
+                (num1, num2)
+            }
+            _ => (0, 0)
+        }
+    }
+
     /// retorna tipo do no recursivamente
     pub fn tipo(&self, escopos: &Escopos) -> TipoSimbolo {
         match &self.regra {
@@ -579,16 +599,18 @@ impl NoAST {
             RegraAST::ValorConstante (token)
             | RegraAST::Ident (token)
             | RegraAST::TipoBasico (token)
-            | RegraAST::Op1 (token)
-            | RegraAST::Op2 (token)
             | RegraAST::NumInt (token)
             | RegraAST::NumReal (token)
-            | RegraAST::Cadeia (token)
-            | RegraAST::OpRelacional (token) => token.lexema(),
+            | RegraAST::Cadeia (token) => token.lexema(),
+            RegraAST::Op1 (token)
+            | RegraAST::Op2 (token)
+            | RegraAST::OpRelacional (token) => format!(" {} ", token.lexema()),
+            RegraAST::Op3 => " % ".to_string(),
+            RegraAST::OpUnario => "-".to_string(),
+            RegraAST::Circunflexo => "^".to_string(),
             RegraAST::Identificador2 => format!(".{}{}", self.filhos[0].texto(), self.filhos[1].texto()),
             RegraAST::Identificadores
             | RegraAST::Expressoes => format!(", {}{}", self.filhos[0].texto(), self.filhos[1].texto()),
-            RegraAST::Circunflexo => "^".to_string(),
             RegraAST::Dimensao => format!("[{}]{}", self.filhos[0].texto(), self.filhos[1].texto()),
             _ => {
                 let mut texto = "".to_string();
